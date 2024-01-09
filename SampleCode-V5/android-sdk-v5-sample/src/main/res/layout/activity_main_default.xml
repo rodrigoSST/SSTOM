@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/imgDevice"
+        android:layout_width="@dimen/uxsdk_150_dp"
+        android:layout_height="@dimen/uxsdk_150_dp"
+        android:layout_margin="@dimen/uxsdk_24_dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/imgLogo"
+        android:layout_width="@dimen/uxsdk_100_dp"
+        android:layout_height="@dimen/uxsdk_100_dp"
+        android:layout_margin="@dimen/uxsdk_24_dp"
+        android:src="@drawable/logo"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/txtInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/uxsdk_24_dp"
+        android:textSize="@dimen/uxsdk_dic_text_size_20sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/imgDevice" />
+
+    <TextView
+        android:id="@+id/txtRegistrationStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/uxsdk_24_dp"
+        android:textSize="@dimen/uxsdk_dic_text_size_20sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/txtInfo" />
+
+    <Button
+        android:id="@+id/btnWidgetList"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/uxsdk_16_dp"
+        android:layout_marginEnd="@dimen/uxsdk_24_dp"
+        android:text="@string/widget_list"
+        app:layout_constraintBottom_toTopOf="@id/btnTestingTools"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/btnTestingTools"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/uxsdk_16_dp"
+        android:layout_marginEnd="@dimen/uxsdk_24_dp"
+        android:text="@string/testing_tools"
+        app:layout_constraintBottom_toTopOf="@id/btnLiveStream"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/btnLiveStream"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/uxsdk_24_dp"
+        android:text="@string/live_streaming"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
