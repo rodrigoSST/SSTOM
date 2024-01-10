@@ -77,7 +77,7 @@ open class FPVWidget @JvmOverloads constructor(
     private var viewWidth = 0
     private var viewHeight = 0
     private var rotationAngle = 0
-    private val fpvSurfaceView: SurfaceView = findViewById(R.id.surface_view_fpv)
+    val fpvSurfaceView: SurfaceView = findViewById(R.id.surface_view_fpv)
     private val cameraNameTextView: TextView = findViewById(R.id.textview_camera_name)
     private val cameraSideTextView: TextView = findViewById(R.id.textview_camera_side)
     private val verticalOffset: Guideline = findViewById(R.id.vertical_offset)

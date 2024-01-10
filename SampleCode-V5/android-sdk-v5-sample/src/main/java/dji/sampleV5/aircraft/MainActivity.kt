@@ -15,7 +15,6 @@ import dji.sampleV5.aircraft.databinding.ActivityMainDefaultBinding
 import dji.sampleV5.aircraft.models.MSDKInfoVm
 import dji.sampleV5.aircraft.models.MSDKManagerVM
 import dji.sampleV5.aircraft.models.globalViewModels
-import dji.sampleV5.aircraft.util.Helper
 import dji.sampleV5.aircraft.util.ToastUtils
 import dji.v5.common.utils.GeoidManager
 import dji.v5.utils.common.LogUtils
@@ -106,15 +105,14 @@ class MainActivity : AppCompatActivity() {
         msdkInfoVm.msdkInfo.observe(this) {
             binding.imgDevice.setImageResource(setImageDevice(it.productType.name))
             binding.txtInfo.text =
-                "${StringUtils.getResStr(R.string.sdk_version, it.SDKVersion + " " + it.buildVer)}\n" +
-                        "${StringUtils.getResStr(R.string.product_name, it.productType.name)}\n" +
+                        "${StringUtils.getResStr(R.string.model, it.productType.name)}\n" +
                         "${StringUtils.getResStr(R.string.package_product_category, it.packageProductCategory)}\n" +
-                        "${StringUtils.getResStr(R.string.is_sdk_debug, it.isDebug)}\n" +
                         it.coreInfo.toString()
         }
-        binding.btnWidgetList.isEnabled = true
-        binding.btnTestingTools.isEnabled = true
-        binding.btnLiveStream.isEnabled = true
+
+        binding.btnWidgetList.isEnabled = false
+        binding.btnTestingTools.isEnabled = false
+        binding.btnLiveStream.isEnabled = false
 
         binding.btnWidgetList.setOnClickListener {
             Intent(this, WidgetsActivity::class.java).also {
@@ -126,8 +124,13 @@ class MainActivity : AppCompatActivity() {
                 startActivity(it)
             }
         }
-        binding.btnLiveStream.setOnClickListener {
+        binding.btnDefaultLayout.setOnClickListener {
             Intent(this, DefaultLayoutActivity::class.java).also {
+                startActivity(it)
+            }
+        }
+        binding.btnLiveStream.setOnClickListener {
+            Intent(this, LiveStreamingActivity::class.java).also {
                 startActivity(it)
             }
         }
@@ -174,6 +177,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setImageDevice(deviceName: String): Int =
         when(deviceName) {
+            "M30_SERIES" -> R.drawable.drone_matrice_30_series
             else -> R.drawable.ic_question
         }
 
@@ -201,7 +205,7 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
         result?.entries?.forEach {
-            if (it.value == false) {
+            if (!it.value) {
                 requestPermission()
                 return@forEach
             }

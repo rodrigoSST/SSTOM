@@ -45,7 +45,7 @@
 
         <activity
             android:name="dji.sampleV5.aircraft.MainActivity"
-            android:theme="@style/full_screen_theme"
+            android:theme="@style/material_full_screen_theme"
             android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="true">
@@ -87,6 +87,12 @@
             android:exported="false"/>
 
         <activity android:name="dji.sampleV5.aircraft.DJIAircraftMainActivity"
+            android:theme="@style/full_screen_theme"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false"/>
+
+        <activity android:name="dji.sampleV5.aircraft.LiveStreamingActivity"
             android:theme="@style/full_screen_theme"
             android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|keyboardHidden"

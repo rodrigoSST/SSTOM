@@ -23,7 +23,7 @@ ext {
     deps.maplibreSdk = 'org.maplibre.gl:android-sdk:9.4.2'
     deps.lottie = 'com.airbnb.android:lottie:3.3.1'//RTK扫描页中使用，用于实现动画效果
     deps.cardview = 'androidx.cardview:cardview:1.0.0'//PopoverView中使用
-    deps.material = 'com.google.android.material:material:1.0.0'//AvoidanceShortcutWidget使用
+    deps.material = 'com.google.android.material:material:1.9.0'//AvoidanceShortcutWidget使用
 
     /*RTK设置页面使用-start*/
     deps.mikepenzCommunityMaterial = "com.mikepenz:community-material-typeface:3.5.95.1-kotlin@aar"
@@ -44,7 +44,7 @@ ext {
     deps.aacCommon = 'androidx.arch.core:core-common:2.1.0'
     deps.aacRuntime = 'androidx.arch.core:core-runtime:2.1.0'
     deps.annotation = 'androidx.annotation:annotation:1.1.0'
-    deps.appcompat = 'androidx.appcompat:appcompat:1.3.1'
+    deps.appcompat = 'androidx.appcompat:appcompat:1.6.1'
     deps.constraintLayout = 'androidx.constraintlayout:constraintlayout:2.1.4'
     deps.multidex = 'androidx.multidex:multidex:2.0.1'
     deps.recyclerview = 'androidx.recyclerview:recyclerview:1.1.0'
@@ -92,4 +92,12 @@ ext {
     deps.aspectj_tools = 'org.aspectj:aspectjtools:1.9.6'
     deps.aspectj_rt = 'org.aspectj:aspectjrt:1.9.6'
     deps.aspectj_weaver = 'org.aspectj:aspectjweaver:1.9.6'
+
+    //Tensor Flow
+    deps.tensorFlow = 'org.tensorflow:tensorflow-lite-task-vision:0.4.0'
+    deps.tensorFlowGpuDelegate = 'org.tensorflow:tensorflow-lite-gpu-delegate-plugin:0.4.0'
+    deps.tensorFlowGpu = 'org.tensorflow:tensorflow-lite-gpu:2.9.0'
+
+    //RabbitMq
+    deps.rabbitmq = 'com.rabbitmq:amqp-client:5.18.0'
 }

@@ -1,10 +1,21 @@
 package dji.sampleV5.aircraft.models
 
+import android.util.Log
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
+import dji.sampleV5.aircraft.api.RabbitMq
+import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_QUEUE_LOCATION_NAME
+import dji.sdk.keyvalue.key.FlightControllerKey
 import dji.sdk.keyvalue.value.common.ComponentIndexType
+import dji.sdk.keyvalue.value.common.LocationCoordinate2D
 import dji.v5.common.callback.CommonCallbacks
 import dji.v5.common.error.IDJIError
 import dji.v5.common.utils.CallbackUtils
+import dji.v5.common.video.channel.VideoChannelType
+import dji.v5.et.create
+import dji.v5.et.get
 import dji.v5.manager.datacenter.MediaDataCenter
 import dji.v5.manager.interfaces.ILiveStreamManager
 import dji.v5.manager.datacenter.livestream.*
@@ -15,6 +26,11 @@ import dji.v5.manager.datacenter.livestream.settings.RtspSettings
 import dji.v5.manager.interfaces.ICameraStreamManager
 import dji.v5.utils.common.ContextUtil
 import dji.v5.utils.common.DjiSharedPreferencesManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * ClassName : LiveStreamVM
@@ -35,6 +51,18 @@ class LiveStreamVM : DJIViewModel() {
     val availableCameraList = MutableLiveData<List<ComponentIndexType>>()
     val streamManager: ILiveStreamManager = MediaDataCenter.getInstance().liveStreamManager
     val cameraManager: ICameraStreamManager = MediaDataCenter.getInstance().cameraStreamManager
+
+    val rabbitMq = RabbitMq()
+    private var startTimeFrame = 0L
+    private var counter = 0
+    private var kbps = 0.0
+
+    private val _info: MutableLiveData<String> = MutableLiveData()
+    val info: LiveData<String> = _info
+    private val _error: MutableLiveData<String> = MutableLiveData()
+    val error: LiveData<String> = _error
+
+    private var repeatJob: Job? = null
 
     init {
         liveStreamStatusListener = object : LiveStreamStatusListener {
@@ -118,6 +146,30 @@ class LiveStreamVM : DJIViewModel() {
 
     fun setLiveVideoBitRate(bitrate: Int) {
         streamManager.liveVideoBitrate = bitrate
+    }
+
+    fun getVideoChannel(): VideoChannelType {
+        return streamManager.videoChannelType
+    }
+
+    fun getLiveStreamQuality():StreamQuality{
+        return streamManager.liveStreamQuality
+    }
+
+    fun getLiveStreamBitRateModes(): Array<LiveVideoBitrateMode> {
+        return listOf(LiveVideoBitrateMode.AUTO, LiveVideoBitrateMode.MANUAL).toTypedArray()
+    }
+
+    fun getLiveVideoBitRateMode():LiveVideoBitrateMode{
+        return streamManager.liveVideoBitrateMode
+    }
+
+    fun getLiveStreamQualities(): Array<StreamQuality> {
+        return listOf(
+            StreamQuality.FULL_HD,
+            StreamQuality.HD,
+            StreamQuality.SD
+        ).toTypedArray()
     }
 
     fun setRTMPConfig(rtmpUrl: String) {
@@ -225,4 +277,98 @@ class LiveStreamVM : DJIViewModel() {
         streamManager.removeLiveStreamStatusListener(liveStreamStatusListener)
         cameraManager.removeAvailableCameraUpdatedListener(availableCameraUpdatedListener)
     }
+
+    fun setupRabbitMqConnectionFactory(
+        userName: String,
+        password: String,
+        virtualHost: String,
+        host: String,
+        port: Int,
+        queueName: List<String>
+    ) {
+        rabbitMq.setupConnectionFactory(userName, password, virtualHost, host, port)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                rabbitMq.prepareConnection(queueName)
+
+                repeatJob = sendLocationToServer()
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _error.value = e.message
+            }
+        }
+    }
+
+    fun publishMessage(queue: String, message: ByteArray) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                rabbitMq.publishMessage(queue, message)
+                getFps(message)
+            } catch (e: InterruptedException) {
+                e.printStackTrace()
+                _error.value = e.message
+            }
+        }
+    }
+
+    fun getFps(biteArray: ByteArray) {
+        if (startTimeFrame == 0L) {
+            startTimeFrame = System.currentTimeMillis()
+            counter++
+        } else {
+            val difference: Long = System.currentTimeMillis() - startTimeFrame
+
+            val seconds = difference / 1000.0
+
+            if(seconds >= 1) {
+                _info.postValue("$counter fps\n${String.format("%.2f", kbps)} kbps")
+                counter = 0
+                kbps = 0.0
+                startTimeFrame = System.currentTimeMillis()
+            }else{
+                counter++
+                kbps =+ getByteArraySize(biteArray)
+            }
+        }
+        Log.i("FrameByFrame", "$counter fps | ${String.format("%.2f", kbps)} kbps")
+    }
+
+    private fun getByteArraySize(biteArray: ByteArray): Double {
+        return biteArray.size / 1024.0
+    }
+
+    fun getLiveStreamTypes(): Array<LiveStreamType> {
+        return listOf(
+            LiveStreamType.RTMP,
+            LiveStreamType.RTSP,
+            LiveStreamType.GB28181,
+            LiveStreamType.AGORA
+        ).toTypedArray()
+    }
+
+    private fun sendLocationToServer(): Job {
+        return viewModelScope.launch(Dispatchers.IO) {
+            while (NonCancellable.isActive) {
+                val location = getAircraftLocation()
+                /*val locationJson = Gson().toJson(
+                    DeviceLocation(
+                        location?.latitude,
+                        location?.longitude
+                    )
+                )
+                Log.i("FrameByFrame", "latitude:  ${location?.latitude} | longitude: ${location?.longitude}")
+                publishMessage(RABBITMQ_QUEUE_LOCATION_NAME, locationJson.toByteArray())*/
+
+                delay(5000L)
+            }
+        }
+    }
+
+    private fun cancelSendLocationToServer() {
+        repeatJob?.cancel()
+    }
+
+    private fun getAircraftLocation() = FlightControllerKey.KeyAircraftLocation3D.create().get()
 }
