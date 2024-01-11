@@ -2,8 +2,12 @@ package dji.sampleV5.aircraft.views
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.ImageFormat
+import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.RectF
 import android.graphics.YuvImage
 import android.media.MediaCodecInfo
 import android.media.MediaFormat
@@ -17,6 +21,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import dji.sampleV5.aircraft.R
@@ -24,6 +29,7 @@ import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
 import dji.sampleV5.aircraft.models.LiveStreamVM
 import dji.sampleV5.aircraft.pages.DJIFragment
 import dji.sampleV5.aircraft.util.ToastUtils
+import dji.sampleV5.aircraft.utils.ai.ObjectDetectorHelper
 import dji.sdk.keyvalue.value.common.CameraLensType
 import dji.v5.common.callback.CommonCallbacks
 import dji.v5.common.error.IDJIError
@@ -72,7 +78,9 @@ import dji.v5.ux.visualcamera.zoom.FocalZoomWidget
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.functions.Consumer
+import org.tensorflow.lite.task.vision.detector.Detection
 import java.io.ByteArrayOutputStream
+import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 
 /**
@@ -83,7 +91,7 @@ import java.util.concurrent.TimeUnit
  * Copyright : ©2022 DJI All Rights Reserved.
  */
 class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder.Callback,
-    YuvDataListener {
+    YuvDataListener, ObjectDetectorHelper.DetectorListener {
 
     private var _binding: FragmentLiveStreamingBinding? = null
     private val binding
@@ -112,6 +120,9 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
     var curWidth: Int = -1
     var curHeight: Int = -1
+
+    private lateinit var objectDetectorHelper: ObjectDetectorHelper
+    private var isEnableAi = false
 
     private val TAG = LogUtils.getTag(this)
     private lateinit var primaryFpvWidget: FPVWidget
@@ -161,6 +172,10 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         view.setLayerType(View.LAYER_TYPE_NONE, null)
+
+        objectDetectorHelper = ObjectDetectorHelper(
+            context = requireContext(), objectDetectorListener = this
+        )
 
         fpvParentView = view.findViewById<ConstraintLayout>(R.id.fpv_holder)
         fpvParentView.setLayerType(View.LAYER_TYPE_NONE, null)
@@ -660,12 +675,14 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             videoDecoder!!.destroy()
             videoDecoder = null
         }
-        /*videoDecoder = VideoDecoder(
+        videoDecoder = VideoDecoder(
             context,
             primaryFpvWidget.videoChannelType,
             DecoderOutputMode.YUV_MODE,
-            primaryFpvWidget.fpvSurfaceView.holder
-        )*/
+            primaryFpvWidget.fpvSurfaceView.holder,
+            curWidth,
+            curHeight
+        )
         videoDecoder?.addYuvDataListener(this)
         isStreaming = true
         binding.fbStartStop.setImageResource(R.drawable.ic_stop)
@@ -1198,7 +1215,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             yuvFrame[length + 2 * i + 1] = u[i]
         }
 
-        //publishMessage(yuvFrame.toBase64())
         screenShot(
             yuvFrame,
             width,
@@ -1242,10 +1258,15 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         yuvImage.compressToJpeg(Rect(0, 0, width, height), 100, out)
         val imageBytes = out.toByteArray()
         val image = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        val mutableBitmap = image.copy(Bitmap.Config.ARGB_8888, true)
 
         imageProcessed = true
 
-        liveStreamVM.publishMessage(RABBITMQ_QUEUE_NAME, bitmapToByteArray(image))
+        if(isEnableAi) {
+            detectObjects(mutableBitmap)
+        } else {
+            liveStreamVM.publishMessage(RABBITMQ_QUEUE_NAME, bitmapToByteArray(image))
+        }
     }
 
     private fun bitmapToByteArray(
@@ -1256,6 +1277,109 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         val byteArrayOutputStream = ByteArrayOutputStream()
         bitmap.compress(format, quality, byteArrayOutputStream)
         return byteArrayOutputStream.toByteArray()
+    }
+
+    private fun detectObjects(image: Bitmap) {
+        // Copy out RGB bits to the shared bitmap buffer
+        //image.use { bitmapBuffer.copyPixelsFromBuffer(image.planes[0].buffer) }
+
+       // val imageRotation = image.imageInfo.rotationDegrees
+        // Pass Bitmap and rotation to the object detector helper for processing and detection
+
+        objectDetectorHelper.detect(image, 0)
+        /*if (aiEnabled) {
+            objectDetectorHelper.detect(bitmapBuffer, imageRotation)
+        } else {
+            rotateImage(bitmapBuffer, imageRotation)?.let {
+                viewModel.publishMessage(
+                    viewModel.rabbitMqQueueStream, bitmapToByteArray(it), viewModel.deviceData
+                )
+            }
+        }*/
+    }
+
+    override fun onError(error: String) {
+        TODO("Not yet implemented")
+    }
+
+    override fun onResults(
+        results: MutableList<Detection>?,
+        inferenceTime: Long,
+        imageHeight: Int,
+        imageWidth: Int,
+        bitmap: Bitmap
+    ) {
+        activity?.runOnUiThread {
+            /*binding.bottomSheetLayout.inferenceTimeVal.text =
+                String.format("%d ms", inferenceTime)*/
+
+            // Pass necessary information to OverlayView for drawing on the canvas
+            binding.overlay.setResults(
+                results ?: LinkedList<Detection>(), imageHeight, imageWidth
+            )
+
+            // Force a redraw
+            binding.overlay.invalidate()
+
+            drawBitmap(
+                results ?: LinkedList<Detection>(), bitmap
+            )
+        }
+    }
+
+    private fun drawBitmap(
+        detectionResults: MutableList<Detection>, bitmap: Bitmap
+    ) {
+        val canvas = Canvas(bitmap)
+
+        val boxPaint = Paint()
+        val textBackgroundPaint = Paint()
+        val textPaint = Paint()
+        val bounds = Rect()
+
+        textBackgroundPaint.color = Color.BLACK
+        textBackgroundPaint.style = Paint.Style.FILL
+        textBackgroundPaint.textSize = 50f
+
+        textPaint.color = Color.WHITE
+        textPaint.style = Paint.Style.FILL
+        textPaint.textSize = 50f
+
+        boxPaint.color = ContextCompat.getColor(
+            requireContext(),
+            R.color.bounding_box_color
+        )
+        boxPaint.strokeWidth = 8F
+        boxPaint.style = Paint.Style.STROKE
+
+        for (result in detectionResults) {
+            val boundingBox = result.boundingBox
+
+            val top = boundingBox.top
+            val bottom = boundingBox.bottom
+            val left = boundingBox.left
+            val right = boundingBox.right
+
+            // Draw bounding box around detected objects
+            val drawableRect = RectF(left, top, right, bottom)
+            canvas.drawRect(drawableRect, boxPaint)
+
+            // Create text to display alongside detected objects
+            val drawableText =
+                result.categories[0].label + " " + String.format("%.2f", result.categories[0].score)
+
+            // Draw rect behind display text
+            textBackgroundPaint.getTextBounds(drawableText, 0, drawableText.length, bounds)
+            val textWidth = bounds.width()
+            val textHeight = bounds.height()
+            canvas.drawRect(
+                left, top, left + textWidth + 8, top + textHeight + 8, textBackgroundPaint
+            )
+
+            // Draw text for detected object
+            canvas.drawText(drawableText, left, top + bounds.height(), textPaint)
+        }
+        liveStreamVM.publishMessage(RABBITMQ_QUEUE_NAME, bitmapToByteArray(bitmap))
     }
 
     companion object {

@@ -129,6 +129,9 @@ dependencies {
     implementation deps.rx3Kt
     implementation deps.dom
     implementation deps.rabbitmq
+    implementation deps.tensorFlow
+    implementation deps.tensorFlowGpuDelegate
+    implementation deps.tensorFlowGpu
     kapt deps.glidecompiler
 
 }

@@ -53,6 +53,12 @@
                 app:uxsdk_interactionEnabled="false"
                 app:uxsdk_sourceCameraNameVisibility="true"
                 app:uxsdk_videoChannelType="secondaryStreamChannel" />
+
+            <dji.sampleV5.aircraft.utils.ai.OverlayView
+                android:id="@+id/overlay"
+                android:layout_height="match_parent"
+                android:layout_width="match_parent" />
+
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <dji.v5.ux.core.panel.topbar.TopBarPanelWidget
