@@ -1,5 +1,6 @@
 package dji.sampleV5.aircraft.views
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -26,6 +27,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
+import dji.sampleV5.aircraft.model.DeviceData
 import dji.sampleV5.aircraft.models.LiveStreamVM
 import dji.sampleV5.aircraft.pages.DJIFragment
 import dji.sampleV5.aircraft.util.ToastUtils
@@ -78,9 +80,11 @@ import dji.v5.ux.visualcamera.zoom.FocalZoomWidget
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.functions.Consumer
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.tensorflow.lite.task.vision.detector.Detection
 import java.io.ByteArrayOutputStream
 import java.util.LinkedList
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 /**
@@ -97,7 +101,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private val binding
         get() = _binding!!
 
-    private val liveStreamVM: LiveStreamVM by viewModels()
+    private val liveStreamVM: LiveStreamVM by viewModel()
     private lateinit var dialog: AlertDialog
     private lateinit var configDialog: AlertDialog
     private var checkedItem: Int = -1
@@ -209,6 +213,11 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         cameraControlsWidget.exposureSettingsIndicatorWidget
             .setStateChangeResourceId(dji.v5.ux.R.id.panel_camera_controls_exposure_settings)
 
+        binding.btnAi.setOnClickListener {
+            isEnableAi = !isEnableAi
+            binding.overlay.isVisible = isEnableAi
+        }
+
 
         MediaDataCenter.getInstance().videoStreamManager.addStreamSourcesListener { sources: List<StreamSource>? ->
             activity?.runOnUiThread { updateFPVWidgetSource(sources) }
@@ -236,6 +245,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
         initListener()
         initLiveStreamInfo()
+        savePrefs()
         prepareConnectionToServer()
     }
 
@@ -302,6 +312,31 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         simulatorIndicatorWidget?.setOnClickListener { v: View? -> simulatorControlWidget.toggleVisibility() }
     }
 
+    private fun savePrefs() {
+        val sharedPreferences = activity?.getPreferences(Context.MODE_PRIVATE)
+        val userId = sharedPreferences?.getString(LiveStreamingFragment.USER_ID, "")
+        if (userId.isNullOrEmpty()) {
+            val uuid = UUID.randomUUID().toString()
+            val prefEdit = sharedPreferences?.edit()
+            prefEdit?.putString(LiveStreamingFragment.USER_ID, UUID.randomUUID().toString())
+            prefEdit?.apply()
+
+            liveStreamVM.setUserId(uuid)
+        } else {
+            liveStreamVM.setUserId(userId)
+        }
+
+        val location = liveStreamVM.getAircraftLocation()
+        liveStreamVM.deviceData = DeviceData(
+            liveStreamVM.userUuid,
+            "Drone",
+            location?.latitude ?: 0.0,
+            location?.longitude ?: 0.0
+        )
+
+        //liveStreamVM.setRemoteDeviceData(liveStreamVM.deviceData)
+    }
+
     private fun initLiveStreamInfo() {
         //liveStreamVM.refreshLiveStreamError()
         //liveStreamVM.refreshLiveStreamStatus()
@@ -332,16 +367,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     }
 
     private fun prepareConnectionToServer() {
-        liveStreamVM.setupRabbitMqConnectionFactory(
-            RABBITMQ_USERNAME,
-            RABBITMQ_PASSWORD,
-            RABBITMQ_VIRTUAL_HOST,
-            RABBITMQ_HOST,
-            RABBITMQ_PORT, listOf(
-                RABBITMQ_QUEUE_NAME,
-                RABBITMQ_QUEUE_LOCATION_NAME
-            )
-        )
+        liveStreamVM.setupRabbitMqConnectionFactory()
     }
 
     private fun updateLiveStreamInfo() {
@@ -1265,7 +1291,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         if(isEnableAi) {
             detectObjects(mutableBitmap)
         } else {
-            liveStreamVM.publishMessage(RABBITMQ_QUEUE_NAME, bitmapToByteArray(image))
+            liveStreamVM.publishMessage(bitmapToByteArray(image))
         }
     }
 
@@ -1379,7 +1405,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             // Draw text for detected object
             canvas.drawText(drawableText, left, top + bounds.height(), textPaint)
         }
-        liveStreamVM.publishMessage(RABBITMQ_QUEUE_NAME, bitmapToByteArray(bitmap))
+        liveStreamVM.publishMessage(bitmapToByteArray(bitmap))
     }
 
     companion object {
@@ -1390,5 +1416,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         const val RABBITMQ_PORT = 5672
         const val RABBITMQ_QUEUE_NAME = "android-queu_sst_new"
         const val RABBITMQ_QUEUE_LOCATION_NAME = "android-queu_sst_location"
+        const val USER_ID = "userId"
     }
 }

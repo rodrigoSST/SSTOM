@@ -4,12 +4,17 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.google.gson.Gson
 import dji.sampleV5.aircraft.api.RabbitMq
-import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_QUEUE_LOCATION_NAME
+import dji.sampleV5.aircraft.data.repository.DeviceDataRepository
+import dji.sampleV5.aircraft.model.DeviceData
+import dji.sampleV5.aircraft.model.DeviceDataResponse
+import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_HOST
+import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_PASSWORD
+import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_PORT
+import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_USERNAME
+import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_VIRTUAL_HOST
 import dji.sdk.keyvalue.key.FlightControllerKey
 import dji.sdk.keyvalue.value.common.ComponentIndexType
-import dji.sdk.keyvalue.value.common.LocationCoordinate2D
 import dji.v5.common.callback.CommonCallbacks
 import dji.v5.common.error.IDJIError
 import dji.v5.common.utils.CallbackUtils
@@ -39,7 +44,9 @@ import kotlinx.coroutines.launch
  * CreateDate : 2022/3/23 11:04 上午
  * Copyright : ©2022 DJI All Rights Reserved.
  */
-class LiveStreamVM : DJIViewModel() {
+class LiveStreamVM(
+    private val deviceDataRepository: DeviceDataRepository
+) : DJIViewModel() {
     private val availableCameraUpdatedListener: ICameraStreamManager.AvailableCameraUpdatedListener
     private val liveStreamStatusListener: LiveStreamStatusListener
     private val RTMP_KEY = "livestream-rtmp"
@@ -64,6 +71,13 @@ class LiveStreamVM : DJIViewModel() {
 
     private var repeatJob: Job? = null
 
+    private val _deviceDataResponse = MutableLiveData<DeviceDataResponse>()
+    val deviceDataResponse: LiveData<DeviceDataResponse> = _deviceDataResponse
+
+    var rabbitMqQueueStream = ""
+    var userUuid = ""
+    lateinit var deviceData: DeviceData
+
     init {
         liveStreamStatusListener = object : LiveStreamStatusListener {
             override fun onLiveStreamStatusUpdate(status: LiveStreamStatus?) {
@@ -84,6 +98,17 @@ class LiveStreamVM : DJIViewModel() {
         }
 
         addListener()
+    }
+
+    fun setRemoteDeviceData(deviceData: DeviceData) {
+        viewModelScope.launch {
+            _deviceDataResponse.postValue(deviceDataRepository.setDeviceData(deviceData))
+        }
+    }
+
+    fun setUserId(userId: String) {
+        this.userUuid = userId
+        rabbitMqQueueStream = "stream_drone_${userId}"
     }
 
     override fun onCleared() {
@@ -278,19 +303,20 @@ class LiveStreamVM : DJIViewModel() {
         cameraManager.removeAvailableCameraUpdatedListener(availableCameraUpdatedListener)
     }
 
-    fun setupRabbitMqConnectionFactory(
-        userName: String,
-        password: String,
-        virtualHost: String,
-        host: String,
-        port: Int,
-        queueName: List<String>
-    ) {
-        rabbitMq.setupConnectionFactory(userName, password, virtualHost, host, port)
+    fun setupRabbitMqConnectionFactory() {
+        rabbitMq.setupConnectionFactory(
+            RABBITMQ_USERNAME,
+            RABBITMQ_PASSWORD,
+            RABBITMQ_VIRTUAL_HOST,
+            RABBITMQ_HOST,
+            RABBITMQ_PORT
+        )
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                rabbitMq.prepareConnection(queueName)
+                rabbitMq.prepareConnection(listOf(
+                    rabbitMqQueueStream
+                ))
 
                 repeatJob = sendLocationToServer()
 
@@ -301,10 +327,10 @@ class LiveStreamVM : DJIViewModel() {
         }
     }
 
-    fun publishMessage(queue: String, message: ByteArray) {
+    fun publishMessage(message: ByteArray) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                rabbitMq.publishMessage(queue, message)
+                rabbitMq.publishMessage(rabbitMqQueueStream, message, deviceData)
                 getFps(message)
             } catch (e: InterruptedException) {
                 e.printStackTrace()
@@ -370,5 +396,5 @@ class LiveStreamVM : DJIViewModel() {
         repeatJob?.cancel()
     }
 
-    private fun getAircraftLocation() = FlightControllerKey.KeyAircraftLocation3D.create().get()
+    fun getAircraftLocation() = FlightControllerKey.KeyAircraftLocation3D.create().get()
 }

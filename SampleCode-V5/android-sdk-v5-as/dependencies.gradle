@@ -100,4 +100,14 @@ ext {
 
     //RabbitMq
     deps.rabbitmq = 'com.rabbitmq:amqp-client:5.18.0'
+
+    //Retrofit
+    deps.retrofit = 'com.squareup.retrofit2:retrofit:2.9.0'
+    deps.retrofitGson = 'com.squareup.retrofit2:converter-gson:2.9.0'
+    deps.retrofitInterceptor = 'com.squareup.okhttp3:logging-interceptor:4.11.0'
+
+    //Koin
+    deps.koin = 'io.insert-koin:koin-android:3.4.0'
+    deps.koinCore = 'io.insert-koin:koin-core:3.4.0'
+    deps.koinTest = 'io.insert-koin:koin-test:3.4.0'
 }

@@ -292,6 +292,17 @@
             app:layout_constraintDimensionRatio="H,1:1"
             app:layout_constraintStart_toStartOf="parent" />
 
+        <ImageView
+            android:id="@+id/btnAi"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="16dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_ai"
+            app:layout_constraintBottom_toBottomOf="@id/title_image"
+            app:layout_constraintStart_toEndOf="@id/title_image"
+            app:layout_constraintTop_toTopOf="@id/title_image" />
+
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/contentBitrate"
             android:layout_width="wrap_content"

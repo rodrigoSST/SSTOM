@@ -132,6 +132,12 @@ dependencies {
     implementation deps.tensorFlow
     implementation deps.tensorFlowGpuDelegate
     implementation deps.tensorFlowGpu
+    implementation deps.retrofit
+    implementation deps.retrofitGson
+    implementation deps.retrofitInterceptor
+    implementation deps.koin
+    implementation deps.koinCore
+    implementation deps.koinTest
     kapt deps.glidecompiler
 
 }

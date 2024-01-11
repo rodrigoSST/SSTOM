@@ -1,9 +1,11 @@
 package dji.sampleV5.aircraft.api
 
 import android.util.Log
+import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
+import dji.sampleV5.aircraft.model.DeviceData
 import java.net.URISyntaxException
 import java.security.KeyManagementException
 import java.security.NoSuchAlgorithmException
@@ -44,13 +46,13 @@ class RabbitMq {
                 val connection: Connection = factory.newConnection()
                 channel = connection.createChannel()
                 queueName.forEach {
-                    channel?.queueDeclare(it, true, false, false, null)
+                    channel?.queueDeclare(it, false, false, true, null)
                 }
                 while (true) {
                     val message = queue.takeFirst()
                     try {
                         queueName.forEach {
-                            publishMessage(it, message.toByteArray())
+                            publishMessage(it, message.toByteArray(), null)
                         }
                     } catch (e: Exception) {
                         Log.d("RabbitMQ", "[f] $message")
@@ -70,10 +72,28 @@ class RabbitMq {
         }
     }
 
-    fun publishMessage(queueName: String, message: ByteArray) {
+    fun publishMessage(queueName: String, message: ByteArray, deviceData: DeviceData?) {
         try {
-            channel?.basicPublish("", queueName, null, message)
+            val headers: MutableMap<String, Any> = HashMap()
+
+            deviceData?.let {
+                headers["userId"] = it.deviceId
+                headers["device"] = it.device
+                headers["latitude"] = it.latitude.toString()
+                headers["longitude"] = it.longitude.toString()
+            }
+
+            channel?.basicPublish(
+                "",
+                queueName,
+                AMQP.BasicProperties.Builder()
+                    .headers(headers)
+                    .build(),
+                message
+            )
         } catch (e: InterruptedException) {
+            e.printStackTrace()
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
