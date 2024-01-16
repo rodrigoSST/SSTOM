@@ -178,6 +178,7 @@ class MainActivity : AppCompatActivity() {
     private fun setImageDevice(deviceName: String): Int =
         when(deviceName) {
             "M30_SERIES" -> R.drawable.drone_matrice_30_series
+            "DJI_MAVIC_3_ENTERPRISE_SERIES" -> R.drawable.drone_mavic_3_enterprise
             else -> R.drawable.ic_question
         }
 

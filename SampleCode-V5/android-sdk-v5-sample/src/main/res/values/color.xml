@@ -90,5 +90,6 @@
     <color name="white_alpha_016">#29FFFFFF</color>
 
     <color name="bounding_box_color">#FF6F00</color>
+    <color name="transparent_30_gray">#4D292828</color>
 
 </resources>

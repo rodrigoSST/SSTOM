@@ -44,10 +44,12 @@
 
     <ImageView
         android:id="@+id/imgLogo"
-        android:layout_width="@dimen/uxsdk_50_dp"
-        android:layout_height="@dimen/uxsdk_50_dp"
+        android:layout_width="@dimen/uxsdk_100_dp"
+        android:layout_height="@dimen/uxsdk_100_dp"
+        android:paddingTop="8dp"
         android:layout_margin="@dimen/uxsdk_32_dp"
-        android:src="@drawable/logo"
+        android:src="@drawable/logo_sstom"
+        android:background="@drawable/bg_rounded"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

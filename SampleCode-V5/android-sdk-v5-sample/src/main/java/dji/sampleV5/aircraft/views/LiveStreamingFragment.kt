@@ -334,7 +334,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             location?.longitude ?: 0.0
         )
 
-        //liveStreamVM.setRemoteDeviceData(liveStreamVM.deviceData)
+        liveStreamVM.setRemoteDeviceData(liveStreamVM.deviceData)
     }
 
     private fun initLiveStreamInfo() {
@@ -1298,7 +1298,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private fun bitmapToByteArray(
         bitmap: Bitmap,
         format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG,
-        quality: Int = 80
+        quality: Int = 50
     ): ByteArray {
         val byteArrayOutputStream = ByteArrayOutputStream()
         bitmap.compress(format, quality, byteArrayOutputStream)
