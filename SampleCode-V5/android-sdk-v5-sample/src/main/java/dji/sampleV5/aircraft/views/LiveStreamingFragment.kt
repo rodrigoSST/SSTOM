@@ -1,6 +1,7 @@
 package dji.sampleV5.aircraft.views
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -10,26 +11,32 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.YuvImage
+import android.hardware.display.DisplayManager
 import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
+import android.util.Range
+import android.util.Size
+import android.view.Display
 import android.view.LayoutInflater
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
-import androidx.fragment.app.viewModels
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
 import dji.sampleV5.aircraft.model.DeviceData
 import dji.sampleV5.aircraft.models.LiveStreamVM
 import dji.sampleV5.aircraft.pages.DJIFragment
+import dji.sampleV5.aircraft.services.DemoScreenRecorderSrtLiveService
 import dji.sampleV5.aircraft.util.ToastUtils
 import dji.sampleV5.aircraft.utils.ai.ObjectDetectorHelper
 import dji.sdk.keyvalue.value.common.CameraLensType
@@ -77,9 +84,20 @@ import dji.v5.ux.training.simulatorcontrol.SimulatorControlWidget.UIState.Visibi
 import dji.v5.ux.visualcamera.CameraNDVIPanelWidget
 import dji.v5.ux.visualcamera.CameraVisiblePanelWidget
 import dji.v5.ux.visualcamera.zoom.FocalZoomWidget
+import io.github.thibaultbee.streampack.data.BitrateRegulatorConfig
+import io.github.thibaultbee.streampack.data.VideoConfig
+import io.github.thibaultbee.streampack.ext.srt.services.ScreenRecorderSrtLiveService
+import io.github.thibaultbee.streampack.ext.srt.streamers.interfaces.ISrtLiveStreamer
+import io.github.thibaultbee.streampack.internal.encoders.MediaCodecHelper
+import io.github.thibaultbee.streampack.internal.muxers.ts.data.TsServiceInfo
+import io.github.thibaultbee.streampack.streamers.bases.BaseScreenRecorderStreamer
+import io.github.thibaultbee.streampack.streamers.interfaces.ILiveStreamer
+import io.github.thibaultbee.streampack.streamers.live.BaseScreenRecorderLiveStreamer
+import io.github.thibaultbee.streampack.utils.getStreamer
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.functions.Consumer
+import kotlinx.coroutines.runBlocking
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.tensorflow.lite.task.vision.detector.Detection
 import java.io.ByteArrayOutputStream
@@ -162,6 +180,8 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
     private var videoDecoder: IVideoDecoder? = null
     private var imageProcessed: Boolean = true
+
+    private lateinit var streamer: BaseScreenRecorderLiveStreamer
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -611,9 +631,18 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                 }*/
 
                 if (!isStreaming) {
-                    startStreamFrameByFrame()
+                    starStreamSrt()
+                    //startStreamFrameByFrame()
                 } else {
-                    stopStreamFrameByFrame()
+                    //stopStreamFrameByFrame()
+                    streamer.stopStream()
+                    streamer.disconnect()
+                    activity?.stopService(
+                        Intent(
+                            requireContext(),
+                            DemoScreenRecorderSrtLiveService::class.java
+                        )
+                    )
                 }
             }
 
@@ -693,6 +722,92 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                 )
             }
         })
+    }
+
+    private fun starStreamSrt() {
+        getContent.launch(
+            BaseScreenRecorderStreamer.createScreenRecorderIntent(
+                requireContext()
+            )
+        )
+    }
+
+    private var getContent =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            ScreenRecorderSrtLiveService.launch(
+                requireContext(),
+                DemoScreenRecorderSrtLiveService::class.java,
+                false,
+                TsServiceInfo(
+                    TsServiceInfo.ServiceType.DIGITAL_TV,
+                    0x4698,
+                    "StreamPackService",
+                    "StreamPack Inc"
+                ),
+                false,
+                BitrateRegulatorConfig(videoBitrateRange = Range(300, 5000000)),
+                { streamer ->
+                    this.streamer = streamer.apply {
+                        activityResult = result
+                    }
+                    try {
+                        configureAndStart()
+                        //activity?.moveTaskToBack(true)
+                    } catch (e: Exception) {
+                        /*this@MainActivity.showAlertDialog(
+                            this@MainActivity,
+                            "Error",
+                            e.message ?: "Unknown error"
+                        )*/
+                        //binding.liveButton.isChecked = false
+                        Log.e(TAG, "Error while starting streamer", e)
+                    }
+                },
+                {
+                    //binding.fbStartStop.isChecked = false
+                    Log.i(TAG, "Service disconnected")
+                })
+        }
+
+    private fun configureAndStart() {
+        val deviceRefreshRate =
+            (activity?.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager).getDisplay(
+                Display.DEFAULT_DISPLAY
+            ).refreshRate.toInt()
+        val fps =
+            if (MediaCodecHelper.Video.getFramerateRange(MediaFormat.MIMETYPE_VIDEO_HEVC)
+                    .contains(deviceRefreshRate)
+            ) {
+                deviceRefreshRate
+            } else {
+                30
+            }
+
+        val videoConfig = VideoConfig(
+            mimeType = MediaFormat.MIMETYPE_VIDEO_HEVC,
+            startBitrate =2000 * 1000, // to b/s
+            resolution = Size(1280, 720),
+            fps = fps
+        )
+        streamer.configure(videoConfig)
+
+
+        runBlocking {
+            streamer.getStreamer<ISrtLiveStreamer>()?.let {
+                it.streamId =
+                    "streamPackId"
+                it.passPhrase =
+                    ""
+                it.connect(
+                    "44.195.107.125",
+                    9000
+                )
+            } ?: streamer.getStreamer<ILiveStreamer>()?.connect(
+                "44.195.107.125"
+            )
+
+            streamer.startStream()
+        }
     }
 
     private fun startStreamFrameByFrame() {
@@ -1298,7 +1413,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private fun bitmapToByteArray(
         bitmap: Bitmap,
         format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG,
-        quality: Int = 50
+        quality: Int = 30
     ): ByteArray {
         val byteArrayOutputStream = ByteArrayOutputStream()
         bitmap.compress(format, quality, byteArrayOutputStream)

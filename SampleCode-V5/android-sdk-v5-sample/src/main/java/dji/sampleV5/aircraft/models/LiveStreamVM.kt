@@ -102,7 +102,12 @@ class LiveStreamVM(
 
     fun setRemoteDeviceData(deviceData: DeviceData) {
         viewModelScope.launch {
-            _deviceDataResponse.postValue(deviceDataRepository.setDeviceData(deviceData))
+            try {
+                _deviceDataResponse.postValue(deviceDataRepository.setDeviceData(deviceData))
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

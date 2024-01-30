@@ -138,6 +138,8 @@ dependencies {
     implementation deps.koin
     implementation deps.koinCore
     implementation deps.koinTest
+    implementation deps.srtStreamPack
+    implementation deps.srtStreamPackExt
     kapt deps.glidecompiler
 
 }

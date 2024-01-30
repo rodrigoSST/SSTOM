@@ -470,4 +470,5 @@ More refer to the release notes." </string>
     <string name="title_select_yuv_format_ok">OK</string>
     <string name="title_select_yuv_format_cancel">Cancel</string>
     <string name="live_streaming">Live Streaming</string>
+    <string name="video_bitrate_key">video_bitrate_key</string>
 </resources>

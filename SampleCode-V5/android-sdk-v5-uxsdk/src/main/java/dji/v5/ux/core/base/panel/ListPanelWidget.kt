@@ -125,7 +125,7 @@ abstract class ListPanelWidget<T> @JvmOverloads constructor(
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         if (!isInEditMode) {
-            smartListModel?.setUp()
+            //smartListModel?.setUp()
 
             listPanelWidgetBaseModel.widgetList
                     .observeOn(SchedulerProvider.ui())
