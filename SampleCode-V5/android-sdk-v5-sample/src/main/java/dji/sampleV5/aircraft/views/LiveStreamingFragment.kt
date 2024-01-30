@@ -1,5 +1,6 @@
 package dji.sampleV5.aircraft.views
 
+import android.Manifest
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -14,22 +15,26 @@ import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Size
 import android.view.LayoutInflater
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.Toast
+import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
-import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
 import dji.sampleV5.aircraft.model.DeviceData
 import dji.sampleV5.aircraft.models.LiveStreamVM
 import dji.sampleV5.aircraft.pages.DJIFragment
+import dji.sampleV5.aircraft.srt.streamers.SurfaceSrtLiveStreamer
 import dji.sampleV5.aircraft.util.ToastUtils
 import dji.sampleV5.aircraft.utils.ai.ObjectDetectorHelper
 import dji.sdk.keyvalue.value.common.CameraLensType
@@ -77,9 +82,15 @@ import dji.v5.ux.training.simulatorcontrol.SimulatorControlWidget.UIState.Visibi
 import dji.v5.ux.visualcamera.CameraNDVIPanelWidget
 import dji.v5.ux.visualcamera.CameraVisiblePanelWidget
 import dji.v5.ux.visualcamera.zoom.FocalZoomWidget
+import io.github.thibaultbee.streampack.data.VideoConfig
+import io.github.thibaultbee.streampack.error.StreamPackError
+import io.github.thibaultbee.streampack.listeners.OnConnectionListener
+import io.github.thibaultbee.streampack.listeners.OnErrorListener
+import io.github.thibaultbee.streampack.streamers.StreamerLifeCycleObserver
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.functions.Consumer
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.tensorflow.lite.task.vision.detector.Detection
 import java.io.ByteArrayOutputStream
@@ -162,6 +173,43 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
     private var videoDecoder: IVideoDecoder? = null
     private var imageProcessed: Boolean = true
+
+    private val errorListener = object : OnErrorListener {
+        override fun onError(error: StreamPackError) {
+            toast("An error occurred: $error")
+        }
+    }
+
+    private val connectionListener = object : OnConnectionListener {
+        override fun onFailed(message: String) {
+            toast("Connection failed: $message")
+        }
+
+        override fun onLost(message: String) {
+            toast("Connection lost: $message")
+        }
+
+        override fun onSuccess() {
+            toast("Connected")
+        }
+    }
+
+    private val streamer by lazy {
+        SurfaceSrtLiveStreamer(
+            requireContext(),
+            false,
+            initialOnErrorListener = errorListener,
+            initialOnConnectionListener = connectionListener
+        )
+    }
+
+    private val streamerLifeCycleObserver by lazy { StreamerLifeCycleObserver(streamer) }
+
+    private fun toast(message: String) {
+        activity?.runOnUiThread {
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -252,6 +300,8 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     override fun onResume() {
         super.onResume()
 
+        inflateStreamer()
+
         mapWidget.onResume()
         compositeDisposable = CompositeDisposable()
         compositeDisposable?.add(systemStatusListPanelWidget.closeButtonPressed()
@@ -280,6 +330,21 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                         Runnable { onCameraSourceUpdated(result.devicePosition, result.lensType) })
                 })
         )
+    }
+
+    @RequiresPermission(allOf = [Manifest.permission.CAMERA])
+    private fun inflateStreamer() {
+        lifecycle.addObserver(streamerLifeCycleObserver)
+        configureStreamer()
+        //binding.preview.streamer = streamer
+
+    }
+
+    private fun configureStreamer() {
+        val videoConfig = VideoConfig(
+            mimeType = MediaFormat.MIMETYPE_VIDEO_HEVC, resolution = Size(1280, 720), fps = 20
+        )
+        streamer.configure(videoConfig)
     }
 
     override fun onPause() {
@@ -611,9 +676,11 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                 }*/
 
                 if (!isStreaming) {
-                    startStreamFrameByFrame()
+                    startSrtStream()
+                    //startStreamFrameByFrame()
                 } else {
-                    stopStreamFrameByFrame()
+                    streamer.stopStream()
+                    //stopStreamFrameByFrame()
                 }
             }
 
@@ -714,6 +781,14 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         binding.fbStartStop.setImageResource(R.drawable.ic_stop)
     }
 
+    private fun startSrtStream() {
+        lifecycleScope.launch {
+            streamer.startStream(
+                "srt://44.195.107.125:9000?streamid=StreamPack&passphrase="
+            )
+        }
+    }
+
     private fun stopStreamFrameByFrame() {
         binding.fbStartStop.setImageResource(R.drawable.ic_play)
 
@@ -725,6 +800,22 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             videoDecoder = null
         }
         isStreaming = false
+    }
+
+    override fun surfaceCreated(holder: SurfaceHolder) {
+        curWidth = surfaceView.width
+        curHeight = surfaceView.height
+        streamer.startPreview(holder)
+    }
+
+    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
+        curWidth = width
+        curHeight = height
+    }
+
+    override fun surfaceDestroyed(holder: SurfaceHolder) {
+        videoDecoder?.onPause()
+        streamer.stopPreview()
     }
 
     private fun showSetLiveStreamRtmpConfigDialog() {
@@ -1165,20 +1256,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         }
     }
 
-    override fun surfaceCreated(holder: SurfaceHolder) {
-        curWidth = surfaceView.width
-        curHeight = surfaceView.height
-    }
-
-    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-        curWidth = width
-        curHeight = height
-    }
-
-    override fun surfaceDestroyed(holder: SurfaceHolder) {
-        videoDecoder?.onPause()
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
@@ -1298,7 +1375,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private fun bitmapToByteArray(
         bitmap: Bitmap,
         format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG,
-        quality: Int = 50
+        quality: Int = 30
     ): ByteArray {
         val byteArrayOutputStream = ByteArrayOutputStream()
         bitmap.compress(format, quality, byteArrayOutputStream)

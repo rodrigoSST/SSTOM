@@ -110,4 +110,10 @@ ext {
     deps.koin = 'io.insert-koin:koin-android:3.4.0'
     deps.koinCore = 'io.insert-koin:koin-core:3.4.0'
     deps.koinTest = 'io.insert-koin:koin-test:3.4.0'
+
+    //SRT
+    deps.srtStreampack = 'io.github.thibaultbee:streampack:2.5.2'
+    deps.srtDroid = 'io.github.thibaultbee:srtdroid:1.7.0'
+    deps.srtStrempackExtension = 'io.github.thibaultbee:streampack-extension-srt:2.5.2'
+
 }

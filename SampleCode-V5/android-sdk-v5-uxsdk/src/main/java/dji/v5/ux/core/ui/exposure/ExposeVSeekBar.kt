@@ -50,7 +50,7 @@ class ExposeVSeekBar @JvmOverloads constructor(
         return super.onTouchEvent(event)
     }
 
-    override fun onDraw(canvas: Canvas?) {
+    override fun onDraw(canvas: Canvas) {
         canvas?.takeIf { isShowSeekBar }?.let {
             drawRect(it)
         }
