@@ -1,9 +1,7 @@
-package com.sst.sstdevicestream.streamer
+package dji.sampleV5.aircraft.srt
 
-import android.Manifest
 import android.content.Context
 import android.view.Surface
-import androidx.annotation.RequiresPermission
 import io.github.thibaultbee.streampack.data.VideoConfig
 import io.github.thibaultbee.streampack.internal.data.Frame
 import io.github.thibaultbee.streampack.internal.sources.IVideoCapture

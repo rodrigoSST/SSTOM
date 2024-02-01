@@ -2,7 +2,6 @@ package dji.sampleV5.aircraft.srt
 
 import android.content.Context
 import android.view.Surface
-import com.sst.sstdevicestream.streamer.SurfaceCapture
 import io.github.thibaultbee.streampack.error.StreamPackError
 import io.github.thibaultbee.streampack.internal.endpoints.IEndpoint
 import io.github.thibaultbee.streampack.internal.muxers.IMuxer
@@ -20,7 +19,7 @@ open class BaseSurfaceStreamer(
 ) : BaseStreamer(
     context = context,
     videoCapture = SurfaceCapture(context),
-    audioCapture = if (enableAudio) AudioCapture() else null,
+    audioCapture = null,
     manageVideoOrientation = true,
     muxer = muxer,
     endpoint = endpoint,

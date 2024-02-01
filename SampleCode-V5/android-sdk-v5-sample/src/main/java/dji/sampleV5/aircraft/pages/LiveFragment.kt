@@ -1,8 +1,12 @@
 package dji.sampleV5.aircraft.pages
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import android.media.MediaFormat
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Size
 import android.view.LayoutInflater
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -13,10 +17,17 @@ import android.widget.EditText
 import android.widget.RadioGroup
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
+import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
+import com.google.android.material.color.utilities.MaterialDynamicColors.surface
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.models.LiveStreamVM
+import dji.sampleV5.aircraft.srt.streamers.SurfaceSrtLiveStreamer
 import dji.sampleV5.aircraft.util.ToastUtils
 import dji.sdk.keyvalue.value.common.ComponentIndexType
 import dji.v5.common.callback.CommonCallbacks
@@ -28,11 +39,18 @@ import dji.v5.manager.datacenter.livestream.StreamQuality
 import dji.v5.manager.datacenter.livestream.VideoResolution
 import dji.v5.manager.interfaces.ICameraStreamManager
 import dji.v5.utils.common.StringUtils
+import io.github.thibaultbee.streampack.data.VideoConfig
+import io.github.thibaultbee.streampack.error.StreamPackError
+import io.github.thibaultbee.streampack.listeners.OnConnectionListener
+import io.github.thibaultbee.streampack.listeners.OnErrorListener
+import io.github.thibaultbee.streampack.streamers.StreamerLifeCycleObserver
+import kotlinx.coroutines.launch
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class LiveFragment : DJIFragment() {
     private val cameraStreamManager = MediaDataCenter.getInstance().cameraStreamManager
 
-    private val liveStreamVM: LiveStreamVM by viewModels()
+    private val liveStreamVM: LiveStreamVM by viewModel()
 
     private val emptyInputMessage = "input is empty"
 
@@ -48,6 +66,43 @@ class LiveFragment : DJIFragment() {
     private lateinit var tvLiveInfo: TextView
     private lateinit var tvLiveError: TextView
     private lateinit var svCameraStream: SurfaceView
+
+    private val errorListener = object : OnErrorListener {
+        override fun onError(error: StreamPackError) {
+            toast("An error occurred: $error")
+        }
+    }
+
+    private val connectionListener = object : OnConnectionListener {
+        override fun onFailed(message: String) {
+            toast("Connection failed: $message")
+        }
+
+        override fun onLost(message: String) {
+            toast("Connection lost: $message")
+        }
+
+        override fun onSuccess() {
+            toast("Connected")
+        }
+    }
+
+    private val streamer by lazy {
+        SurfaceSrtLiveStreamer(
+            requireContext(),
+            false,
+            initialOnErrorListener = errorListener,
+            initialOnConnectionListener = connectionListener
+        )
+    }
+
+    private val streamerLifeCycleObserver by lazy { StreamerLifeCycleObserver(streamer) }
+
+    private fun toast(message: String) {
+        activity?.runOnUiThread {
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+        }
+    }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.frag_live, container, false)
     }
@@ -66,12 +121,20 @@ class LiveFragment : DJIFragment() {
         tvLiveError = view.findViewById(R.id.tv_live_error)
         svCameraStream = view.findViewById(R.id.sv_camera_stream)
 
+        inflateStreamer()
+
         initRGCamera()
         initRGQuality()
         initRGBitRate()
         initLiveButton()
         initCameraStream()
         initLiveData()
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+
     }
 
     override fun onDestroyView() {
@@ -133,6 +196,21 @@ class LiveFragment : DJIFragment() {
         }
     }
 
+    @RequiresPermission(allOf = [Manifest.permission.CAMERA])
+    private fun inflateStreamer() {
+        lifecycle.addObserver(streamerLifeCycleObserver)
+        configureStreamer()
+        //binding.preview.streamer = streamer
+
+    }
+
+    private fun configureStreamer() {
+        val videoConfig = VideoConfig(
+            mimeType = MediaFormat.MIMETYPE_VIDEO_HEVC, resolution = Size(1280, 720), fps = 20
+        )
+        streamer.configure(videoConfig)
+    }
+
     private fun initRGCamera() {
         rgCamera.setOnCheckedChangeListener { group: RadioGroup, checkedId: Int ->
             val view = group.findViewById<View>(checkedId)
@@ -146,6 +224,8 @@ class LiveFragment : DJIFragment() {
                     svCameraStream.height,
                     ICameraStreamManager.ScaleType.CENTER_INSIDE
                 )
+
+                streamer.startPreview(surface)
             }
             liveStreamVM.setCameraIndex(cameraIndex)
         }
@@ -196,7 +276,13 @@ class LiveFragment : DJIFragment() {
 
     private fun initLiveButton() {
         btnStart.setOnClickListener { _ ->
-            val protocolCheckId = rgProtocol.checkedRadioButtonId
+            lifecycleScope.launch {
+                streamer.startStream(
+                    "srt://44.195.107.125:9000?streamid=StreamPack&passphrase="
+                )
+            }
+
+            /*val protocolCheckId = rgProtocol.checkedRadioButtonId
             if (protocolCheckId == R.id.rb_rtmp) {
                 showSetLiveStreamRtmpConfigDialog()
             } else if (protocolCheckId == R.id.rb_rtsp) {
@@ -205,7 +291,7 @@ class LiveFragment : DJIFragment() {
                 showSetLiveStreamGb28181ConfigDialog()
             } else if (protocolCheckId == R.id.rb_agora) {
                 showSetLiveStreamAgoraConfigDialog()
-            }
+            }*/
         }
         btnStop.setOnClickListener {
             stopLive()
@@ -224,6 +310,7 @@ class LiveFragment : DJIFragment() {
                         height,
                         ICameraStreamManager.ScaleType.CENTER_INSIDE
                     )
+                    streamer.startPreview(holder)
                 }
             }
 
