@@ -6,6 +6,7 @@ import io.github.thibaultbee.streampack.data.BitrateRegulatorConfig
 import dji.sampleV5.aircraft.srt.internal.endpoints.SrtProducer
 import dji.sampleV5.aircraft.srt.regulator.srt.SrtBitrateRegulator
 import dji.sampleV5.aircraft.srt.streamers.interfaces.ISrtLiveStreamer
+import dji.v5.manager.interfaces.ICameraStreamManager
 import io.github.thibaultbee.streampack.internal.muxers.ts.TSMuxer
 import io.github.thibaultbee.streampack.internal.muxers.ts.data.TsServiceInfo
 import io.github.thibaultbee.streampack.internal.utils.Scheduler
@@ -16,18 +17,18 @@ import io.github.thibaultbee.streampack.regulator.IBitrateRegulatorFactory
 
 class SurfaceSrtLiveStreamer(
     context: Context,
-    enableAudio: Boolean = true,
     tsServiceInfo: TsServiceInfo = context.defaultTsServiceInfo,
     bitrateRegulatorFactory: IBitrateRegulatorFactory? = null,
     bitrateRegulatorConfig: BitrateRegulatorConfig? = null,
+    cameraStreamManager: ICameraStreamManager,
     initialOnErrorListener: OnErrorListener? = null,
     initialOnConnectionListener: OnConnectionListener? = null
 ) : BaseSurfaceLiveStreamer(
     context = context,
-    enableAudio = enableAudio,
     muxer = TSMuxer().apply { addService(tsServiceInfo) },
     endpoint = SrtProducer(),
     initialOnErrorListener = initialOnErrorListener,
+    cameraStreamManager = cameraStreamManager,
     initialOnConnectionListener = initialOnConnectionListener
 ), ISrtLiveStreamer {
 

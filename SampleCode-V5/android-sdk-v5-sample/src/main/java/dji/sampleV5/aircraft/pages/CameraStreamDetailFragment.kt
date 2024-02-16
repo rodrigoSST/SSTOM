@@ -1,6 +1,9 @@
 package dji.sampleV5.aircraft.pages
 
+import android.Manifest
+import android.media.MediaFormat
 import android.os.Bundle
+import android.util.Size
 import android.view.LayoutInflater
 import android.view.Surface
 import android.view.SurfaceHolder
@@ -11,14 +14,23 @@ import android.widget.Button
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
+import android.widget.Toast
+import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.models.CameraStreamDetailVM
+import dji.sampleV5.aircraft.srt.streamers.SurfaceSrtLiveStreamer
 import dji.sdk.keyvalue.value.camera.CameraVideoStreamSourceType
 import dji.sdk.keyvalue.value.common.ComponentIndexType
+import dji.v5.manager.datacenter.MediaDataCenter
 import dji.v5.manager.interfaces.ICameraStreamManager
+import io.github.thibaultbee.streampack.data.VideoConfig
+import io.github.thibaultbee.streampack.error.StreamPackError
+import io.github.thibaultbee.streampack.listeners.OnConnectionListener
+import io.github.thibaultbee.streampack.listeners.OnErrorListener
+import io.github.thibaultbee.streampack.streamers.StreamerLifeCycleObserver
 import kotlinx.android.synthetic.main.fragment_camera_stream_detail.sv_camera
 
 class CameraStreamDetailFragment : Fragment() {
@@ -60,6 +72,44 @@ class CameraStreamDetailFragment : Fragment() {
     private var height = -1
     private var scaleType = ICameraStreamManager.ScaleType.CENTER_INSIDE
 
+
+    private val errorListener = object : OnErrorListener {
+        override fun onError(error: StreamPackError) {
+            toast("An error occurred: $error")
+        }
+    }
+
+    private val connectionListener = object : OnConnectionListener {
+        override fun onFailed(message: String) {
+            toast("Connection failed: $message")
+        }
+
+        override fun onLost(message: String) {
+            toast("Connection lost: $message")
+        }
+
+        override fun onSuccess() {
+            toast("Connected")
+        }
+    }
+
+    private val streamer by lazy {
+        SurfaceSrtLiveStreamer(
+            requireContext(),
+            initialOnErrorListener = errorListener,
+            initialOnConnectionListener = connectionListener,
+            cameraStreamManager = MediaDataCenter.getInstance().cameraStreamManager
+        )
+    }
+
+    private val streamerLifeCycleObserver by lazy { StreamerLifeCycleObserver(streamer) }
+
+    private fun toast(message: String) {
+        activity?.runOnUiThread {
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         cameraIndex = ComponentIndexType.find(arguments?.getInt(KEY_CAMERA_INDEX, 0) ?: 0)
@@ -96,7 +146,23 @@ class CameraStreamDetailFragment : Fragment() {
         initViewModel()
 
         onOpenOrCloseCheckListener.onClick(btnCloseOrOpen)
+
+        inflateStreamer()
     }
+
+    @RequiresPermission(allOf = [Manifest.permission.CAMERA])
+    private fun inflateStreamer() {
+        lifecycle.addObserver(streamerLifeCycleObserver)
+        configureStreamer()
+    }
+
+    private fun configureStreamer() {
+        val videoConfig = VideoConfig(
+            mimeType = MediaFormat.MIMETYPE_VIDEO_HEVC, resolution = Size(1280, 720), fps = 20
+        )
+        streamer.configure(videoConfig)
+    }
+
 
     private fun initViewModel() {
         viewModel.setCameraIndex(cameraIndex)

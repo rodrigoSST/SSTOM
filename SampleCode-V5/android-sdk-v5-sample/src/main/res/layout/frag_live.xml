@@ -66,6 +66,15 @@
                 android:textColor="@color/white"
                 android:textSize="11sp" />
 
+            <RadioButton
+                android:id="@+id/rb_srt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:buttonTint="@color/white"
+                android:text="SRT"
+                android:textColor="@color/white"
+                android:textSize="11sp" />
+
         </RadioGroup>
 
         <Button

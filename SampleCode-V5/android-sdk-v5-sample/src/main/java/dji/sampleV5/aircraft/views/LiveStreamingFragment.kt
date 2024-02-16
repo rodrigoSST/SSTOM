@@ -197,9 +197,9 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private val streamer by lazy {
         SurfaceSrtLiveStreamer(
             requireContext(),
-            false,
             initialOnErrorListener = errorListener,
-            initialOnConnectionListener = connectionListener
+            initialOnConnectionListener = connectionListener,
+            cameraStreamManager = MediaDataCenter.getInstance().cameraStreamManager
         )
     }
 

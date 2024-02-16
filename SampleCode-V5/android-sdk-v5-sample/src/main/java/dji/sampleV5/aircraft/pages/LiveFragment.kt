@@ -2,7 +2,6 @@ package dji.sampleV5.aircraft.pages
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.pm.PackageManager
 import android.media.MediaFormat
 import android.os.Bundle
 import android.text.TextUtils
@@ -20,11 +19,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AlertDialog
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContentProviderCompat.requireContext
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.color.utilities.MaterialDynamicColors.surface
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.models.LiveStreamVM
 import dji.sampleV5.aircraft.srt.streamers.SurfaceSrtLiveStreamer
@@ -90,9 +85,9 @@ class LiveFragment : DJIFragment() {
     private val streamer by lazy {
         SurfaceSrtLiveStreamer(
             requireContext(),
-            false,
             initialOnErrorListener = errorListener,
-            initialOnConnectionListener = connectionListener
+            initialOnConnectionListener = connectionListener,
+            cameraStreamManager = cameraStreamManager
         )
     }
 
@@ -129,12 +124,6 @@ class LiveFragment : DJIFragment() {
         initLiveButton()
         initCameraStream()
         initLiveData()
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-
     }
 
     override fun onDestroyView() {
@@ -222,10 +211,8 @@ class LiveFragment : DJIFragment() {
                     surface,
                     svCameraStream.width,
                     svCameraStream.height,
-                    ICameraStreamManager.ScaleType.CENTER_INSIDE
+                    ICameraStreamManager.ScaleType.FIX_XY
                 )
-
-                streamer.startPreview(surface)
             }
             liveStreamVM.setCameraIndex(cameraIndex)
         }
@@ -276,22 +263,28 @@ class LiveFragment : DJIFragment() {
 
     private fun initLiveButton() {
         btnStart.setOnClickListener { _ ->
-            lifecycleScope.launch {
-                streamer.startStream(
-                    "srt://44.195.107.125:9000?streamid=StreamPack&passphrase="
-                )
-            }
 
-            /*val protocolCheckId = rgProtocol.checkedRadioButtonId
-            if (protocolCheckId == R.id.rb_rtmp) {
-                showSetLiveStreamRtmpConfigDialog()
-            } else if (protocolCheckId == R.id.rb_rtsp) {
-                showSetLiveStreamRtspConfigDialog()
-            } else if (protocolCheckId == R.id.rb_gb28181) {
-                showSetLiveStreamGb28181ConfigDialog()
-            } else if (protocolCheckId == R.id.rb_agora) {
-                showSetLiveStreamAgoraConfigDialog()
-            }*/
+            when (rgProtocol.checkedRadioButtonId) {
+                R.id.rb_rtmp -> {
+                    showSetLiveStreamRtmpConfigDialog()
+                }
+                R.id.rb_rtsp -> {
+                    showSetLiveStreamRtspConfigDialog()
+                }
+                R.id.rb_gb28181 -> {
+                    showSetLiveStreamGb28181ConfigDialog()
+                }
+                R.id.rb_agora -> {
+                    showSetLiveStreamAgoraConfigDialog()
+                }
+                R.id.rb_srt -> {
+                    lifecycleScope.launch {
+                        streamer.startStream(
+                            "srt://44.195.107.125:9000?streamid=StreamPack&passphrase="
+                        )
+                    }
+                }
+            }
         }
         btnStop.setOnClickListener {
             stopLive()
@@ -310,7 +303,7 @@ class LiveFragment : DJIFragment() {
                         height,
                         ICameraStreamManager.ScaleType.CENTER_INSIDE
                     )
-                    streamer.startPreview(holder)
+                    streamer.startPreview(holder.surface)
                 }
             }
 
@@ -337,7 +330,11 @@ class LiveFragment : DJIFragment() {
     }
 
     private fun stopLive() {
-        liveStreamVM.stopStream(null)
+        if (rgProtocol.checkedRadioButtonId == R.id.rb_srt) {
+            streamer.stopStream()
+        } else {
+            liveStreamVM.stopStream(null)
+        }
     }
 
     private fun showSetLiveStreamRtmpConfigDialog() {

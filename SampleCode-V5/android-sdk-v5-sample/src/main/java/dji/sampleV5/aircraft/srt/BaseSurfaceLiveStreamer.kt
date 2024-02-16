@@ -1,6 +1,7 @@
 package dji.sampleV5.aircraft.srt
 
 import android.content.Context
+import dji.v5.manager.interfaces.ICameraStreamManager
 import io.github.thibaultbee.streampack.internal.endpoints.ILiveEndpoint
 import io.github.thibaultbee.streampack.internal.muxers.IMuxer
 import io.github.thibaultbee.streampack.listeners.OnConnectionListener
@@ -9,16 +10,16 @@ import io.github.thibaultbee.streampack.streamers.interfaces.ILiveStreamer
 
 open class BaseSurfaceLiveStreamer(
     context: Context,
-    enableAudio: Boolean = true,
     muxer: IMuxer,
     endpoint: ILiveEndpoint,
+    cameraStreamManager: ICameraStreamManager,
     initialOnErrorListener: OnErrorListener? = null,
     initialOnConnectionListener: OnConnectionListener? = null
 ) : BaseSurfaceStreamer(
     context = context,
-    enableAudio = enableAudio,
     muxer = muxer,
     endpoint = endpoint,
+    cameraStreamManager,
     initialOnErrorListener = initialOnErrorListener
 ),
     ILiveStreamer {
