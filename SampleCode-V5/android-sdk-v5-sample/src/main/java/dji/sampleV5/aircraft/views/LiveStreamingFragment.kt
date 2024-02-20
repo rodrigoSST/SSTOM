@@ -294,7 +294,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         initListener()
         initLiveStreamInfo()
         savePrefs()
-        prepareConnectionToServer()
     }
 
     override fun onResume() {
@@ -336,8 +335,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private fun inflateStreamer() {
         lifecycle.addObserver(streamerLifeCycleObserver)
         configureStreamer()
-        //binding.preview.streamer = streamer
-
     }
 
     private fun configureStreamer() {
@@ -429,10 +426,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         /*liveStreamVM.error.observe(viewLifecycleOwner) {
             ToastUtils.showToast(it)
         }*/
-    }
-
-    private fun prepareConnectionToServer() {
-        liveStreamVM.setupRabbitMqConnectionFactory()
     }
 
     private fun updateLiveStreamInfo() {
@@ -786,6 +779,8 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             streamer.startStream(
                 "srt://44.195.107.125:9000?streamid=StreamPack&passphrase="
             )
+
+            liveStreamVM.deviceStream(liveStreamVM.deviceDataResponse.value?.udpPort.toString())
         }
     }
 
@@ -1368,7 +1363,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         if(isEnableAi) {
             detectObjects(mutableBitmap)
         } else {
-            liveStreamVM.publishMessage(bitmapToByteArray(image))
+            //liveStreamVM.publishMessage(bitmapToByteArray(image))
         }
     }
 
@@ -1383,22 +1378,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     }
 
     private fun detectObjects(image: Bitmap) {
-        // Copy out RGB bits to the shared bitmap buffer
-        //image.use { bitmapBuffer.copyPixelsFromBuffer(image.planes[0].buffer) }
-
-       // val imageRotation = image.imageInfo.rotationDegrees
-        // Pass Bitmap and rotation to the object detector helper for processing and detection
-
         objectDetectorHelper.detect(image, 0)
-        /*if (aiEnabled) {
-            objectDetectorHelper.detect(bitmapBuffer, imageRotation)
-        } else {
-            rotateImage(bitmapBuffer, imageRotation)?.let {
-                viewModel.publishMessage(
-                    viewModel.rabbitMqQueueStream, bitmapToByteArray(it), viewModel.deviceData
-                )
-            }
-        }*/
     }
 
     override fun onError(error: String) {
@@ -1413,15 +1393,10 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         bitmap: Bitmap
     ) {
         activity?.runOnUiThread {
-            /*binding.bottomSheetLayout.inferenceTimeVal.text =
-                String.format("%d ms", inferenceTime)*/
-
-            // Pass necessary information to OverlayView for drawing on the canvas
             binding.overlay.setResults(
                 results ?: LinkedList<Detection>(), imageHeight, imageWidth
             )
 
-            // Force a redraw
             binding.overlay.invalidate()
 
             drawBitmap(
@@ -1482,7 +1457,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             // Draw text for detected object
             canvas.drawText(drawableText, left, top + bounds.height(), textPaint)
         }
-        liveStreamVM.publishMessage(bitmapToByteArray(bitmap))
+        //liveStreamVM.publishMessage(bitmapToByteArray(bitmap))
     }
 
     companion object {

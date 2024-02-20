@@ -59,7 +59,6 @@ class LiveStreamVM(
     val streamManager: ILiveStreamManager = MediaDataCenter.getInstance().liveStreamManager
     val cameraManager: ICameraStreamManager = MediaDataCenter.getInstance().cameraStreamManager
 
-    val rabbitMq = RabbitMq()
     private var startTimeFrame = 0L
     private var counter = 0
     private var kbps = 0.0
@@ -107,6 +106,12 @@ class LiveStreamVM(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+    }
+
+    fun deviceStream(port: String) {
+        viewModelScope.launch {
+            deviceDataRepository.deviceStream(port)
         }
     }
 
@@ -305,42 +310,6 @@ class LiveStreamVM(
     fun removeListener() {
         streamManager.removeLiveStreamStatusListener(liveStreamStatusListener)
         cameraManager.removeAvailableCameraUpdatedListener(availableCameraUpdatedListener)
-    }
-
-    fun setupRabbitMqConnectionFactory() {
-        rabbitMq.setupConnectionFactory(
-            RABBITMQ_USERNAME,
-            RABBITMQ_PASSWORD,
-            RABBITMQ_VIRTUAL_HOST,
-            RABBITMQ_HOST,
-            RABBITMQ_PORT
-        )
-
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                rabbitMq.prepareConnection(listOf(
-                    rabbitMqQueueStream
-                ))
-
-                repeatJob = sendLocationToServer()
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _error.value = e.message
-            }
-        }
-    }
-
-    fun publishMessage(message: ByteArray) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                rabbitMq.publishMessage(rabbitMqQueueStream, message, deviceData)
-                getFps(message)
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-                _error.value = e.message
-            }
-        }
     }
 
     fun getFps(biteArray: ByteArray) {
