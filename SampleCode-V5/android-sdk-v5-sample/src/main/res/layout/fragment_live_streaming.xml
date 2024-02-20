@@ -249,7 +249,7 @@
             android:layout_height="@dimen/uxsdk_100_dp"
             android:layout_marginEnd="12dp"
             android:layout_marginBottom="12dp"
-
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:uxsdk_djiMap_mapType="normal" />
@@ -362,6 +362,7 @@
             android:layout_marginBottom="16dp"
             app:backgroundTint="@color/blue_main"
             app:fabSize="mini"
+            android:visibility="gone"
             app:layout_constraintBottom_toTopOf="@+id/fbStreamingQuality"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -375,6 +376,7 @@
             android:layout_marginBottom="16dp"
             app:backgroundTint="@color/blue_main"
             app:fabSize="mini"
+            android:visibility="gone"
             app:layout_constraintBottom_toTopOf="@+id/fbStreamingInfo"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -388,6 +390,7 @@
             android:layout_marginBottom="16dp"
             app:backgroundTint="@color/blue_main"
             app:fabSize="mini"
+            android:visibility="gone"
             app:layout_constraintBottom_toTopOf="@+id/fbStreamingChannel"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
