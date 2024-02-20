@@ -3,14 +3,17 @@ package dji.sampleV5.aircraft
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import dji.sampleV5.aircraft.databinding.ActivityMainDefaultBinding
 import dji.sampleV5.aircraft.models.MSDKInfoVm
 import dji.sampleV5.aircraft.models.MSDKManagerVM
@@ -64,6 +67,20 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainDefaultBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        binding.contentMain.isVisible = false
+
+        val videoPath = "android.resource://" + packageName + "/" + R.raw.intro_video
+        val uri = Uri.parse(videoPath)
+
+        binding.videoView.setVideoURI(uri)
+        binding.videoView.start()
+
+        binding.videoView.setOnCompletionListener {
+            Intent(this, LiveStreamingActivity::class.java).also {
+                startActivity(it)
+            }
+        }
+
         if (!isTaskRoot && intent.hasCategory(Intent.CATEGORY_LAUNCHER) && Intent.ACTION_MAIN == intent.action) {
             finish()
             return
@@ -95,6 +112,21 @@ class MainActivity : AppCompatActivity() {
         if (checkPermission()) {
             handleAfterPermissionPermitted()
         }
+    }
+
+    override fun onPostResume() {
+        binding.videoView.resume()
+        super.onPostResume()
+    }
+
+    override fun onRestart() {
+        binding.videoView.start()
+        super.onRestart()
+    }
+
+    override fun onPause() {
+        binding.videoView.suspend()
+        super.onPause()
     }
 
     private fun handleAfterPermissionPermitted() {
@@ -141,7 +173,7 @@ class MainActivity : AppCompatActivity() {
         msdkManagerVM.lvRegisterState.observe(this) { resultPair ->
             val statusText: String?
             if (resultPair.first) {
-                ToastUtils.showToast("Register Success")
+                Log.i(TAG,"Register Success")
                 statusText = StringUtils.getResStr(this, R.string.registered)
                 msdkInfoVm.initListener()
                 handler.postDelayed({
@@ -160,19 +192,19 @@ class MainActivity : AppCompatActivity() {
         }
 
         msdkManagerVM.lvProductConnectionState.observe(this) { resultPair ->
-            showToast("Product: ${resultPair.second} ,ConnectionState:  ${resultPair.first}")
+            Log.i(TAG, "Product: ${resultPair.second} ,ConnectionState:  ${resultPair.first}")
         }
 
         msdkManagerVM.lvProductChanges.observe(this) { productId ->
-            showToast("Product: $productId Changed")
+            Log.i(TAG, "Product: $productId Changed")
         }
 
         msdkManagerVM.lvInitProcess.observe(this) { processPair ->
-            showToast("Init Process event: ${processPair.first.name}")
+            Log.i(TAG, "Init Process event: ${processPair.first.name}")
         }
 
         msdkManagerVM.lvDBDownloadProgress.observe(this) { resultPair ->
-            showToast("Database Download Progress current: ${resultPair.first}, total: ${resultPair.second}")
+            Log.i(TAG, "Database Download Progress current: ${resultPair.first}, total: ${resultPair.second}")
         }
     }
 
@@ -219,8 +251,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        binding.videoView.stopPlayback()
         super.onDestroy()
         handler.removeCallbacksAndMessages(null)
         disposable.dispose()
+    }
+
+    companion object {
+        const val TAG = "MainActivityLog"
     }
 }
