@@ -114,6 +114,16 @@ class LiveStreamVM(
         }
     }
 
+    fun disconnectServer(deviceStreamRequest: DeviceStreamRequest) {
+        viewModelScope.launch {
+            try {
+                deviceDataRepository.disconnectServer(deviceStreamRequest)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     fun setRemoteDeviceData(deviceData: DeviceData) {
         viewModelScope.launch {
             try {

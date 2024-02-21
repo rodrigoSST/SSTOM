@@ -178,20 +178,27 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private val errorListener = object : OnErrorListener {
         override fun onError(error: StreamPackError) {
             toast("An error occurred: $error")
+            binding.fbStartStop.setImageResource(R.drawable.ic_play)
+            isStreaming = false
         }
     }
 
     private val connectionListener = object : OnConnectionListener {
         override fun onFailed(message: String) {
             toast("Connection failed: $message")
+            binding.fbStartStop.setImageResource(R.drawable.ic_play)
+            isStreaming = false
         }
 
         override fun onLost(message: String) {
             toast("Connection lost: $message")
+            binding.fbStartStop.setImageResource(R.drawable.ic_play)
+            isStreaming = false
         }
 
         override fun onSuccess() {
             binding.fbStartStop.setImageResource(R.drawable.ic_stop)
+            isStreaming = true
             toast("Connected")
         }
     }
@@ -682,6 +689,16 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                 } else {
                     streamer.stopStream()
                     streamer.disconnect()
+                    isStreaming = false
+                    binding.fbStartStop.setImageResource(R.drawable.ic_play)
+                    liveStreamVM.disconnectServer(
+                        DeviceStreamRequest(
+                            liveStreamVM.deviceDataSet.value?.deviceId.toString(),
+                            liveStreamVM.deviceDataSet.value?.udpPort.toString(),
+                            liveStreamVM.deviceDataSet.value?.srtPort.toString(),
+                            "Drone"
+                        )
+                    )
                     //stopStreamFrameByFrame()
                 }
             }
@@ -791,10 +808,10 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
             liveStreamVM.deviceStream(
                 DeviceStreamRequest(
-                    liveStreamVM.deviceDataResponse.value?.deviceId.toString(),
-                    liveStreamVM.deviceDataResponse.value?.udpPort.toString(),
-                    liveStreamVM.deviceDataResponse.value?.srtPort.toString(),
-                    "Android Phone"
+                    liveStreamVM.deviceDataSet.value?.deviceId.toString(),
+                    liveStreamVM.deviceDataSet.value?.udpPort.toString(),
+                    liveStreamVM.deviceDataSet.value?.srtPort.toString(),
+                    "Drone"
                 )
             )
         }
