@@ -8,6 +8,7 @@ import dji.sampleV5.aircraft.api.RabbitMq
 import dji.sampleV5.aircraft.data.repository.DeviceDataRepository
 import dji.sampleV5.aircraft.model.DeviceData
 import dji.sampleV5.aircraft.model.DeviceDataResponse
+import dji.sampleV5.aircraft.model.DeviceStreamRequest
 import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_HOST
 import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_PASSWORD
 import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_PORT
@@ -77,6 +78,9 @@ class LiveStreamVM(
     var userUuid = ""
     lateinit var deviceData: DeviceData
 
+    private val _deviceData = MutableLiveData<DeviceDataResponse>()
+    val deviceDataSet: LiveData<DeviceDataResponse> = _deviceData
+
     init {
         liveStreamStatusListener = object : LiveStreamStatusListener {
             override fun onLiveStreamStatusUpdate(status: LiveStreamStatus?) {
@@ -99,6 +103,17 @@ class LiveStreamVM(
         addListener()
     }
 
+    fun connectServer(deviceData: DeviceData) {
+        viewModelScope.launch {
+            try {
+                _deviceData.postValue(deviceDataRepository.connectServer(deviceData))
+            } catch (e: Exception) {
+                //e.printStackTrace()
+                _error.postValue(e.message)
+            }
+        }
+    }
+
     fun setRemoteDeviceData(deviceData: DeviceData) {
         viewModelScope.launch {
             try {
@@ -109,9 +124,9 @@ class LiveStreamVM(
         }
     }
 
-    fun deviceStream(port: String) {
+    fun deviceStream(deviceStreamRequest: DeviceStreamRequest) {
         viewModelScope.launch {
-            deviceDataRepository.deviceStream(port)
+            deviceDataRepository.deviceStream(deviceStreamRequest)
         }
     }
 

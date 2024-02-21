@@ -8,6 +8,16 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface DeviceStreamAPI {
+    @POST("connect_server")
+    suspend fun connectServer(
+        @Body deviceData: DeviceData
+    ): DeviceDataResponse
+
+    @POST("disconnect_server")
+    suspend fun disconnectServer(
+        @Body deviceStreamRequest: DeviceStreamRequest
+    ): DeviceDataResponse
+
     @POST("device_data")
     suspend fun setDeviceData(
         @Body deviceData: DeviceData

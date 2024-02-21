@@ -20,7 +20,7 @@ open class BaseSurfaceStreamer(
     context = context,
     videoCapture = SurfaceCapture(cameraStreamManager),
     audioCapture = null,
-    manageVideoOrientation = false,
+    manageVideoOrientation = true,
     muxer = muxer,
     endpoint = endpoint,
     initialOnErrorListener = initialOnErrorListener

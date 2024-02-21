@@ -32,6 +32,7 @@ import androidx.lifecycle.lifecycleScope
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
 import dji.sampleV5.aircraft.model.DeviceData
+import dji.sampleV5.aircraft.model.DeviceStreamRequest
 import dji.sampleV5.aircraft.models.LiveStreamVM
 import dji.sampleV5.aircraft.pages.DJIFragment
 import dji.sampleV5.aircraft.srt.streamers.SurfaceSrtLiveStreamer
@@ -190,6 +191,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         }
 
         override fun onSuccess() {
+            binding.fbStartStop.setImageResource(R.drawable.ic_stop)
             toast("Connected")
         }
     }
@@ -396,7 +398,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             location?.longitude ?: 0.0
         )
 
-        liveStreamVM.setRemoteDeviceData(liveStreamVM.deviceData)
+        liveStreamVM.connectServer(liveStreamVM.deviceData)
     }
 
     private fun initLiveStreamInfo() {
@@ -426,6 +428,12 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         /*liveStreamVM.error.observe(viewLifecycleOwner) {
             ToastUtils.showToast(it)
         }*/
+
+        liveStreamVM.deviceDataSet.observe(viewLifecycleOwner) {
+            /*binding.txtConnectedToServer.text = getString(R.string.connected_to_server)
+            binding.txtConnectedToServer.setTextColor(resources.getColor(R.color.server_connected, null))
+            binding.btnSrtStream.isEnabled = true*/
+        }
     }
 
     private fun updateLiveStreamInfo() {
@@ -673,6 +681,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                     //startStreamFrameByFrame()
                 } else {
                     streamer.stopStream()
+                    streamer.disconnect()
                     //stopStreamFrameByFrame()
                 }
             }
@@ -780,7 +789,14 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                 "srt://44.195.107.125:9000?streamid=StreamPack&passphrase="
             )
 
-            liveStreamVM.deviceStream(liveStreamVM.deviceDataResponse.value?.udpPort.toString())
+            liveStreamVM.deviceStream(
+                DeviceStreamRequest(
+                    liveStreamVM.deviceDataResponse.value?.deviceId.toString(),
+                    liveStreamVM.deviceDataResponse.value?.udpPort.toString(),
+                    liveStreamVM.deviceDataResponse.value?.srtPort.toString(),
+                    "Android Phone"
+                )
+            )
         }
     }
 
