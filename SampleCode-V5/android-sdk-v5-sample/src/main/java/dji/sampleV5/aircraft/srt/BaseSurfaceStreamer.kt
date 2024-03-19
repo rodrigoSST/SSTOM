@@ -2,6 +2,7 @@ package dji.sampleV5.aircraft.srt
 
 import android.content.Context
 import android.view.Surface
+import dji.sdk.keyvalue.value.common.ComponentIndexType
 import dji.v5.manager.interfaces.ICameraStreamManager
 import io.github.thibaultbee.streampack.error.StreamPackError
 import io.github.thibaultbee.streampack.internal.endpoints.IEndpoint
@@ -50,6 +51,10 @@ open class BaseSurfaceStreamer(
     override fun stopPreview() {
         stopStream()
         cameraCapture.stopPreview()
+    }
+
+    fun switchCamera(cameraIndex: ComponentIndexType) {
+        cameraCapture.switchCamera(cameraIndex)
     }
 
     /**

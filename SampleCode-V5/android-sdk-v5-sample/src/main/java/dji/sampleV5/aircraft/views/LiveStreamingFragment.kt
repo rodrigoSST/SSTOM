@@ -1,6 +1,7 @@
 package dji.sampleV5.aircraft.views
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -33,12 +34,14 @@ import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
 import dji.sampleV5.aircraft.model.DeviceData
 import dji.sampleV5.aircraft.model.DeviceStreamRequest
+import dji.sampleV5.aircraft.models.CameraStreamListVM
 import dji.sampleV5.aircraft.models.LiveStreamVM
 import dji.sampleV5.aircraft.pages.DJIFragment
 import dji.sampleV5.aircraft.srt.streamers.SurfaceSrtLiveStreamer
 import dji.sampleV5.aircraft.util.ToastUtils
 import dji.sampleV5.aircraft.utils.ai.ObjectDetectorHelper
 import dji.sdk.keyvalue.value.common.CameraLensType
+import dji.sdk.keyvalue.value.common.ComponentIndexType
 import dji.v5.common.callback.CommonCallbacks
 import dji.v5.common.error.IDJIError
 import dji.v5.common.video.channel.VideoChannelState
@@ -303,12 +306,16 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         initListener()
         initLiveStreamInfo()
         savePrefs()
+
     }
 
+    @SuppressLint("MissingPermission")
     override fun onResume() {
         super.onResume()
 
         inflateStreamer()
+
+        liveStreamVM.connectServer(liveStreamVM.deviceData)
 
         mapWidget.onResume()
         compositeDisposable = CompositeDisposable()
@@ -437,6 +444,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         }*/
 
         liveStreamVM.deviceDataSet.observe(viewLifecycleOwner) {
+            binding.fbStartStop.show()
             /*binding.txtConnectedToServer.text = getString(R.string.connected_to_server)
             binding.txtConnectedToServer.setTextColor(resources.getColor(R.color.server_connected, null))
             binding.btnSrtStream.isEnabled = true*/
@@ -564,6 +572,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         val cameraIndex = CameraUtil.getCameraIndex(devicePosition)
         updateViewVisibility(devicePosition, lensType)
         updateInteractionEnabled()
+        streamer.switchCamera(cameraIndex)
         //如果无需使能或者显示的，也就没有必要切换了。
         if (fpvInteractionWidget.isInteractionEnabled) {
             fpvInteractionWidget.updateCameraSource(cameraIndex, lensType)
@@ -641,7 +650,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private fun swapVideoSource() {
         var restartStreaming = false
         if (isStreaming) {
-            stopStreamFrameByFrame()
+            //stopStreamFrameByFrame()
             restartStreaming = true
         }
         val primaryVideoChannel = primaryFpvWidget.videoChannelType
@@ -669,49 +678,12 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.fbStartStop -> {
-                //TODO RTSP implementation
-                /*if (liveStreamVM.isStreaming()) {
-                    stopStream()
-                    fbStartStop.setImageResource(R.drawable.ic_play)
-                } else {
-                    liveStreamVM.setRTSPConfig(
-                        "123456",
-                        "123",
-                        "8554".toInt()
-                    )
-                    startStream()
-                    fbStartStop.setImageResource(R.drawable.ic_stop)
-                }*/
-
                 if (!isStreaming) {
                     startSrtStream()
-                    //startStreamFrameByFrame()
                 } else {
-                    streamer.stopStream()
-                    streamer.disconnect()
-                    isStreaming = false
-                    binding.fbStartStop.setImageResource(R.drawable.ic_play)
-                    liveStreamVM.disconnectServer(
-                        DeviceStreamRequest(
-                            liveStreamVM.deviceDataSet.value?.deviceId.toString(),
-                            liveStreamVM.deviceDataSet.value?.udpPort.toString(),
-                            liveStreamVM.deviceDataSet.value?.srtPort.toString(),
-                            "Drone"
-                        )
-                    )
-                    //stopStreamFrameByFrame()
+                    stopSrtStreaming()
                 }
             }
-
-            /*R.id.fbStreamingConfig -> {
-                //showSetLiveStreamConfigDialog()
-                liveStreamVM.setRTSPConfig(
-                    "123456",
-                    "123",
-                    "8554".toInt()
-                )
-                //ToastUtils.showToast("RTSP config success")
-            }*/
 
             R.id.fbStreamingInfo -> {
                 showStreamInfo = !showStreamInfo
@@ -815,6 +787,21 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                 )
             )
         }
+    }
+
+    private fun stopSrtStreaming() {
+        streamer.stopStream()
+        streamer.disconnect()
+        isStreaming = false
+        binding.fbStartStop.setImageResource(R.drawable.ic_play)
+        liveStreamVM.disconnectServer(
+            DeviceStreamRequest(
+                liveStreamVM.deviceDataSet.value?.deviceId.toString(),
+                liveStreamVM.deviceDataSet.value?.udpPort.toString(),
+                liveStreamVM.deviceDataSet.value?.srtPort.toString(),
+                "Drone"
+            )
+        )
     }
 
     private fun stopStreamFrameByFrame() {
@@ -1491,6 +1478,11 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             canvas.drawText(drawableText, left, top + bounds.height(), textPaint)
         }
         //liveStreamVM.publishMessage(bitmapToByteArray(bitmap))
+    }
+
+    override fun onStop() {
+        stopSrtStreaming()
+        super.onStop()
     }
 
     companion object {

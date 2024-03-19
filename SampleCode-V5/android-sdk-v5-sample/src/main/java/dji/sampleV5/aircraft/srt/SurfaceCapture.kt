@@ -51,6 +51,16 @@ class SurfaceCapture(
         isPreviewing = false
     }
 
+    fun switchCamera(cameraIndex: ComponentIndexType) {
+        cameraStreamManager.putCameraStreamSurface(
+            cameraIndex,
+            encoderSurface!!,
+            1280,
+            720,
+            ICameraStreamManager.ScaleType.CENTER_INSIDE
+        )
+    }
+
     private fun checkStream() =
         require(encoderSurface != null) { "encoder surface must not be null" }
 
