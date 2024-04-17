@@ -278,6 +278,7 @@
             android:layout_height="200dp"
             android:text="@string/n_a"
             android:textColor="@color/blue"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 
@@ -299,6 +300,7 @@
             android:layout_marginStart="16dp"
             android:scaleType="centerInside"
             android:src="@drawable/ic_ai"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="@id/title_image"
             app:layout_constraintStart_toEndOf="@id/title_image"
             app:layout_constraintTop_toTopOf="@id/title_image" />
@@ -414,7 +416,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:backgroundTint="@color/blue_main"
-            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"

@@ -17,11 +17,11 @@ open class BaseSurfaceStreamer(
     endpoint: IEndpoint,
     cameraStreamManager: ICameraStreamManager,
     initialOnErrorListener: OnErrorListener? = null
-) : BaseStreamer(
+) : DJIBaseStreamer(
     context = context,
     videoCapture = SurfaceCapture(cameraStreamManager),
     audioCapture = null,
-    manageVideoOrientation = true,
+    manageVideoOrientation = false,
     muxer = muxer,
     endpoint = endpoint,
     initialOnErrorListener = initialOnErrorListener

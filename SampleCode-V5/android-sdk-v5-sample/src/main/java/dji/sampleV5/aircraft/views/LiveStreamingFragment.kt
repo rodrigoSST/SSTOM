@@ -778,14 +778,14 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                 "srt://44.195.107.125:9000?streamid=StreamPack&passphrase="
             )
 
-            liveStreamVM.deviceStream(
+            /*liveStreamVM.deviceStream(
                 DeviceStreamRequest(
                     liveStreamVM.deviceDataSet.value?.deviceId.toString(),
                     liveStreamVM.deviceDataSet.value?.udpPort.toString(),
                     liveStreamVM.deviceDataSet.value?.srtPort.toString(),
                     "Drone"
                 )
-            )
+            )*/
         }
     }
 

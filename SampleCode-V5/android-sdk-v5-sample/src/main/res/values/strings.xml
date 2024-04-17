@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name_sst" translatable="false">SSTOM</string>
+    <string name="app_name_sst" translatable="false">SSTPlay SM DEv5</string>
     <string name="news_title">MSDK 5.4.0</string>
     <string name="news_description">"- Added supported aircraft: Matrice 350 RTK.
 - Matrice 300 RTK added support for DJI RC Plus remote controller.
