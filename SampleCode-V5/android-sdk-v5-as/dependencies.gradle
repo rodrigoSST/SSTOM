@@ -13,7 +13,7 @@ ext {
     deps.rx3Kt = 'io.reactivex.rxjava3:rxkotlin:3.0.0'
     deps.sqlcipher = 'net.zetetic:android-database-sqlcipher:4.5.0'
     deps.wire = 'com.squareup.wire:wire-runtime:2.2.0'
-    deps.amap3DMap = 'com.amap.api:3dmap:7.3.0'
+    deps.amap3DMap = 'com.amap.api:3dmap:9.8.3'
     deps.amapSearch = 'com.amap.api:search:7.3.0'
     deps.okhttp3 = 'com.squareup.okhttp3:okhttp:3.14.9'
     deps.leakcanary = 'com.squareup.leakcanary:leakcanary-android:2.11'

@@ -392,11 +392,11 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
     private fun savePrefs() {
         val sharedPreferences = activity?.getPreferences(Context.MODE_PRIVATE)
-        val userId = sharedPreferences?.getString(LiveStreamingFragment.USER_ID, "")
+        val userId = sharedPreferences?.getString(USER_ID, "")
         if (userId.isNullOrEmpty()) {
             val uuid = UUID.randomUUID().toString()
             val prefEdit = sharedPreferences?.edit()
-            prefEdit?.putString(LiveStreamingFragment.USER_ID, UUID.randomUUID().toString())
+            prefEdit?.putString(USER_ID, UUID.randomUUID().toString())
             prefEdit?.apply()
 
             liveStreamVM.setUserId(uuid)
