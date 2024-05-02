@@ -470,4 +470,10 @@ More refer to the release notes." </string>
     <string name="title_select_yuv_format_ok">OK</string>
     <string name="title_select_yuv_format_cancel">Cancel</string>
     <string name="live_streaming">Live Streaming</string>
+    <string name="login">Login</string>
+    <string name="continue_button">Continue</string>
+    <string name="fill_the_info">Fill in the following information:</string>
+    <string name="what_is_your_email">What is your email?</string>
+    <string name="fill_the_field">Fill this field to continue</string>
+    <string name="what_is_your_password">What is your password?</string>
 </resources>

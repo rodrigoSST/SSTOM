@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
 import dji.sampleV5.aircraft.views.LiveStreamingFragment
+import dji.sampleV5.aircraft.views.login.LoginEmailFragment
 
 class LiveStreamingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

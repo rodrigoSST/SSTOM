@@ -76,7 +76,7 @@ class MainActivity : AppCompatActivity() {
         binding.videoView.start()
 
         binding.videoView.setOnCompletionListener {
-            Intent(this, LiveStreamingActivity::class.java).also {
+            Intent(this, LoginActivity::class.java).also {
                 startActivity(it)
             }
         }

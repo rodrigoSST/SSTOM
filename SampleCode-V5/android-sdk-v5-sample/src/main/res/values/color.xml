@@ -92,4 +92,8 @@
     <color name="bounding_box_color">#FF6F00</color>
     <color name="transparent_30_gray">#4D292828</color>
 
+    <color name="main_gray">#555555</color>
+    <color name="icon_gray">#818181</color>
+    <color name="main_blue">#1A73E8</color>
+
 </resources>

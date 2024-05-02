@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_livestream"
+    app:startDestination="@id/navigation_login_email">
+
+    <fragment
+        android:id="@+id/navigation_login_email"
+        android:name="dji.sampleV5.aircraft.views.login.LoginEmailFragment"
+        android:label="main_page"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_navigation_login_email_to_navigation_login_password"
+            app:destination="@id/navigation_login_password" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_login_password"
+        android:name="dji.sampleV5.aircraft.views.login.LoginPasswordFragment"
+        android:label="main_page"
+        tools:layout="@layout/fragment_login"/>
+
+</navigation>

@@ -1,6 +1,7 @@
 package dji.sampleV5.aircraft
 
 import android.content.Context
+import com.sst.data.model.di.dataModule
 import dji.sampleV5.aircraft.di.appModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -24,7 +25,7 @@ class DJIAircraftApplication : DJIApplication() {
             androidLogger()
             androidContext(this@DJIAircraftApplication)
             koin.loadModules(
-                listOf(appModule)
+                listOf(appModule, dataModule)
             )
         }
     }
