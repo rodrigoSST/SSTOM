@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.SSTDeviceStream" parent="ThemeOverlay.Material3.MaterialCalendar.Fullscreen">
+    <style name="Theme.SSTDeviceStream" parent="material_full_screen_theme">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/main_blue</item>
         <item name="colorPrimaryVariant">#484F9C</item>

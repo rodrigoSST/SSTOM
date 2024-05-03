@@ -100,7 +100,7 @@
             android:exported="false"/>
 
         <activity android:name="dji.sampleV5.aircraft.LoginActivity"
-            android:theme="@style/full_screen_theme"
+            android:theme="@style/Theme.SSTDeviceStream"
             android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false"/>

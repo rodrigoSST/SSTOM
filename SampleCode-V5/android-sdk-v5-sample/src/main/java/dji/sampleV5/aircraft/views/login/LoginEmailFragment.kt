@@ -41,7 +41,7 @@ class LoginEmailFragment : BaseFragment<FragmentLoginBinding, BaseViewModel>(
                 binding.tiField.error = getString(R.string.fill_the_field)
             } else {
                 findNavController().navigate(
-                    R.id.navigation_login_password,
+                    R.id.action_navigation_login_email_to_navigation_login_password,
                     Bundle().apply {
                         putString(
                             LoginPasswordFragment.EXTRA_EMAIL,
