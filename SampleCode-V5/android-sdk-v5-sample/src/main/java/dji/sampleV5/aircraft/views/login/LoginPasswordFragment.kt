@@ -1,21 +1,21 @@
 package dji.sampleV5.aircraft.views.login
 
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
 import android.view.View
+import androidx.navigation.fragment.findNavController
 import com.sst.data.model.request.LoginRequest
 import dji.sampleV5.aircraft.comom.extensions.pop
 import dji.sampleV5.aircraft.comom.extensions.safeLet
 import dji.sampleV5.aircraft.views.base.BaseActivityContract
-import dji.sampleV5.aircraft.LiveStreamingActivity
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.data.MSDKInfo
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import dji.sampleV5.aircraft.databinding.FragmentLoginBinding
 import dji.sampleV5.aircraft.enums.DeviceType
 import dji.sampleV5.aircraft.models.MSDKInfoModel
+import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.EXTRA_ID_DEVICE
 import dji.sampleV5.aircraft.views.base.BaseFragment
 import dji.v5.utils.inner.SDKConfig
 
@@ -71,9 +71,12 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
         viewModel.login.observe(viewLifecycleOwner) {
             savePrefs(it.userData.idUser, it.device.idDevice)
             if (it != null) {
-                Intent(requireContext(), LiveStreamingActivity::class.java).also { intent ->
-                    startActivity(intent)
-                }
+                findNavController().navigate(
+                    R.id.action_navigation_login_password_to_navigation_livestreaming,
+                    Bundle().apply {
+                        putString(EXTRA_ID_DEVICE, it.device.idDevice)
+                    }
+                )
             }
         }
 

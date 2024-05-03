@@ -116,4 +116,7 @@ ext {
     deps.srtDroid = 'io.github.thibaultbee:srtdroid:1.7.0'
     deps.srtStrempackExtension = 'io.github.thibaultbee:streampack-extension-srt:2.5.2'
 
+    //Exoplayer
+    deps.exoplayer = "com.google.android.exoplayer:exoplayer:2.19.1"
+
 }

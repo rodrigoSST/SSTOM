@@ -5,6 +5,7 @@ import com.sst.data.model.request.StartStream
 import com.sst.data.model.response.DeviceDataResponse
 import com.sst.data.model.response.LoginResponse
 import com.sst.data.model.response.Response
+import com.sst.data.model.response.StartStreamResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -19,7 +20,7 @@ interface SstPlayApi {
     @POST("/api/start_stream/")
     suspend fun startStream(
         @Body startStream: StartStream
-    ): DeviceDataResponse
+    ): StartStreamResponse
 
     @GET("/api/disconnect_device/{deviceId}")
     suspend fun disconnectDevice(

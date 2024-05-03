@@ -2,7 +2,6 @@ package dji.sampleV5.aircraft.views
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -30,18 +29,21 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.source.ProgressiveMediaSource
+import com.sst.data.model.request.StartStream
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
-import dji.sampleV5.aircraft.model.DeviceData
-import dji.sampleV5.aircraft.model.DeviceStreamRequest
-import dji.sampleV5.aircraft.models.CameraStreamListVM
 import dji.sampleV5.aircraft.models.LiveStreamVM
 import dji.sampleV5.aircraft.pages.DJIFragment
 import dji.sampleV5.aircraft.srt.streamers.SurfaceSrtLiveStreamer
+import dji.sampleV5.aircraft.srtPlayer.SrtDataSourceFactory
+import dji.sampleV5.aircraft.srtPlayer.TsOnlyExtractorFactory
 import dji.sampleV5.aircraft.util.ToastUtils
 import dji.sampleV5.aircraft.utils.ai.ObjectDetectorHelper
 import dji.sdk.keyvalue.value.common.CameraLensType
-import dji.sdk.keyvalue.value.common.ComponentIndexType
 import dji.v5.common.callback.CommonCallbacks
 import dji.v5.common.error.IDJIError
 import dji.v5.common.video.channel.VideoChannelState
@@ -94,13 +96,14 @@ import io.github.thibaultbee.streampack.streamers.StreamerLifeCycleObserver
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.functions.Consumer
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.tensorflow.lite.task.vision.detector.Detection
 import java.io.ByteArrayOutputStream
 import java.util.LinkedList
-import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 /**
  * ClassName : LiveStreamFragment
@@ -165,6 +168,14 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private lateinit var fpvParentView: ConstraintLayout
     private lateinit var surfaceView: SurfaceView
 
+    private val idDevice by lazy {
+        arguments?.getString(EXTRA_ID_DEVICE)
+    }
+
+    private var player: Player? = null
+    private lateinit var urlReceive: String
+
+
     private var compositeDisposable: CompositeDisposable? = null
     private val cameraSourceProcessor = DataProcessor.create(
         CameraSource(
@@ -190,17 +201,20 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         override fun onFailed(message: String) {
             toast("Connection failed: $message")
             binding.fbStartStop.setImageResource(R.drawable.ic_play)
+            idDevice?.let { liveStreamVM.disconnectDevice(it) }
             isStreaming = false
         }
 
         override fun onLost(message: String) {
             toast("Connection lost: $message")
             binding.fbStartStop.setImageResource(R.drawable.ic_play)
+            idDevice?.let { liveStreamVM.disconnectDevice(it) }
             isStreaming = false
         }
 
         override fun onSuccess() {
             binding.fbStartStop.setImageResource(R.drawable.ic_stop)
+            startPlayer()
             isStreaming = true
             toast("Connected")
         }
@@ -251,7 +265,8 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         secondaryFPVWidget = view.findViewById<FPVWidget>(R.id.widget_secondary_fpv)
         systemStatusListPanelWidget =
             view.findViewById<SystemStatusListPanelWidget>(R.id.widget_panel_system_status_list)
-        simulatorControlWidget = view.findViewById<SimulatorControlWidget>(R.id.widget_simulator_control)
+        simulatorControlWidget =
+            view.findViewById<SimulatorControlWidget>(R.id.widget_simulator_control)
         lensControlWidget = view.findViewById<LensControlWidget>(R.id.widget_lens_control)
         ndviCameraPanel = view.findViewById<CameraNDVIPanelWidget>(R.id.panel_ndvi_camera)
         visualCameraPanel = view.findViewById<CameraVisiblePanelWidget>(R.id.panel_visual_camera)
@@ -304,8 +319,8 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         mapWidget.onCreate(savedInstanceState)
 
         initListener()
-        initLiveStreamInfo()
-        savePrefs()
+        setupObservers()
+
 
     }
 
@@ -314,8 +329,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         super.onResume()
 
         inflateStreamer()
-
-        liveStreamVM.connectServer(liveStreamVM.deviceData)
 
         mapWidget.onResume()
         compositeDisposable = CompositeDisposable()
@@ -390,39 +403,11 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         simulatorIndicatorWidget?.setOnClickListener { v: View? -> simulatorControlWidget.toggleVisibility() }
     }
 
-    private fun savePrefs() {
-        val sharedPreferences = activity?.getPreferences(Context.MODE_PRIVATE)
-        val userId = sharedPreferences?.getString(USER_ID, "")
-        if (userId.isNullOrEmpty()) {
-            val uuid = UUID.randomUUID().toString()
-            val prefEdit = sharedPreferences?.edit()
-            prefEdit?.putString(USER_ID, UUID.randomUUID().toString())
-            prefEdit?.apply()
-
-            liveStreamVM.setUserId(uuid)
-        } else {
-            liveStreamVM.setUserId(userId)
-        }
-
-        val location = liveStreamVM.getAircraftLocation()
-        liveStreamVM.deviceData = DeviceData(
-            liveStreamVM.userUuid,
-            "Drone",
-            location?.latitude ?: 0.0,
-            location?.longitude ?: 0.0
-        )
-
-        liveStreamVM.connectServer(liveStreamVM.deviceData)
-    }
-
-    private fun initLiveStreamInfo() {
-        //liveStreamVM.refreshLiveStreamError()
-        //liveStreamVM.refreshLiveStreamStatus()
+    private fun setupObservers() {
         liveStreamVM.liveStreamStatus.observe(viewLifecycleOwner) {
             it?.let {
                 fps = it.fps
                 vbps = it.vbps
-                //isStreaming = it.isStreaming
                 resolution_w = it.resolution?.width!!
                 resolution_h = it.resolution?.height!!
                 packet_loss = it.packetLoss
@@ -439,15 +424,31 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             }
         }
 
-        /*liveStreamVM.error.observe(viewLifecycleOwner) {
+        liveStreamVM.error.observe(viewLifecycleOwner) {
             ToastUtils.showToast(it)
-        }*/
+        }
 
-        liveStreamVM.deviceDataSet.observe(viewLifecycleOwner) {
-            binding.fbStartStop.show()
-            /*binding.txtConnectedToServer.text = getString(R.string.connected_to_server)
-            binding.txtConnectedToServer.setTextColor(resources.getColor(R.color.server_connected, null))
-            binding.btnSrtStream.isEnabled = true*/
+        liveStreamVM.device.observe(viewLifecycleOwner) {
+            lifecycleScope.launch {
+                if (!isStreaming) {
+                    urlReceive = it.urlReceive
+                    thread(start = true) {
+                        Thread.sleep(10000)
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            try {
+                                streamer.startStream(it.urlTransmit)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                ToastUtils.showToast(e.message ?: "")
+                                binding.fbStartStop.setImageResource(R.drawable.ic_play)
+                            }
+                        }
+                    }
+                } else {
+                    streamer.stopStream()
+                    streamer.disconnect()
+                }
+            }
         }
     }
 
@@ -774,18 +775,16 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
     private fun startSrtStream() {
         lifecycleScope.launch {
-            streamer.startStream(
-                "srt://44.195.107.125:9000?streamid=StreamPack&passphrase="
-            )
-
-            /*liveStreamVM.deviceStream(
-                DeviceStreamRequest(
-                    liveStreamVM.deviceDataSet.value?.deviceId.toString(),
-                    liveStreamVM.deviceDataSet.value?.udpPort.toString(),
-                    liveStreamVM.deviceDataSet.value?.srtPort.toString(),
-                    "Drone"
+            val location = liveStreamVM.getAircraftLocation()
+            idDevice?.let {
+                liveStreamVM.startStream(
+                    StartStream(
+                        it,
+                        location?.latitude ?: 0.0,
+                        location?.longitude ?: 0.0
+                    )
                 )
-            )*/
+            }
         }
     }
 
@@ -794,28 +793,8 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         streamer.disconnect()
         isStreaming = false
         binding.fbStartStop.setImageResource(R.drawable.ic_play)
-        liveStreamVM.disconnectServer(
-            DeviceStreamRequest(
-                liveStreamVM.deviceDataSet.value?.deviceId.toString(),
-                liveStreamVM.deviceDataSet.value?.udpPort.toString(),
-                liveStreamVM.deviceDataSet.value?.srtPort.toString(),
-                "Drone"
-            )
-        )
     }
 
-    private fun stopStreamFrameByFrame() {
-        binding.fbStartStop.setImageResource(R.drawable.ic_play)
-
-        videoDecoder?.removeYuvDataListener(this)
-
-        videoDecoder?.let {
-            videoDecoder!!.onPause()
-            videoDecoder!!.destroy()
-            videoDecoder = null
-        }
-        isStreaming = false
-    }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         curWidth = surfaceView.width
@@ -1380,7 +1359,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
         imageProcessed = true
 
-        if(isEnableAi) {
+        if (isEnableAi) {
             detectObjects(mutableBitmap)
         } else {
             //liveStreamVM.publishMessage(bitmapToByteArray(image))
@@ -1480,19 +1459,45 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         //liveStreamVM.publishMessage(bitmapToByteArray(bitmap))
     }
 
+    private fun startPlayer() {
+        activity?.runOnUiThread {
+            player = buildPlayer(urlReceive)
+            binding.playerView.player = player
+        }
+    }
+
+    private fun releasePlayer(player: Player) {
+        player.stop()
+        player.release()
+    }
+
+    private fun buildPlayer(url: String?): Player {
+        val mediaItem = MediaItem.Builder()
+            .setUri(url)
+            .setCustomCacheKey("")
+            .build()
+
+        val source =
+            ProgressiveMediaSource.Factory(SrtDataSourceFactory(), TsOnlyExtractorFactory())
+                .createMediaSource(mediaItem)
+
+
+        val player = ExoPlayer.Builder(requireContext())
+            .build()
+        player.setMediaSource(source)
+
+        player.prepare()
+        player.play()
+        player.playWhenReady = true
+        return player
+    }
+
     override fun onStop() {
         stopSrtStreaming()
         super.onStop()
     }
 
     companion object {
-        const val RABBITMQ_USERNAME = "sst"
-        const val RABBITMQ_PASSWORD = "12345"
-        const val RABBITMQ_VIRTUAL_HOST = "/"
-        const val RABBITMQ_HOST = "44.195.107.125"
-        const val RABBITMQ_PORT = 5672
-        const val RABBITMQ_QUEUE_NAME = "android-queu_sst_new"
-        const val RABBITMQ_QUEUE_LOCATION_NAME = "android-queu_sst_location"
-        const val USER_ID = "userId"
+        const val EXTRA_ID_DEVICE = "EXTRA_ID_DEVICE"
     }
 }

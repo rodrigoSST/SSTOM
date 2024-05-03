@@ -4,16 +4,11 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import dji.sampleV5.aircraft.api.RabbitMq
-import dji.sampleV5.aircraft.data.repository.DeviceDataRepository
-import dji.sampleV5.aircraft.model.DeviceData
+import com.sst.data.model.repository.StreamRepository
+import com.sst.data.model.request.StartStream
+import dji.sampleV5.aircraft.comom.mapper.toUiModel
 import dji.sampleV5.aircraft.model.DeviceDataResponse
-import dji.sampleV5.aircraft.model.DeviceStreamRequest
-import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_HOST
-import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_PASSWORD
-import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_PORT
-import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_USERNAME
-import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.RABBITMQ_VIRTUAL_HOST
+import dji.sampleV5.aircraft.views.uiModel.DeviceUiModel
 import dji.sdk.keyvalue.key.FlightControllerKey
 import dji.sdk.keyvalue.value.common.ComponentIndexType
 import dji.v5.common.callback.CommonCallbacks
@@ -46,7 +41,7 @@ import kotlinx.coroutines.launch
  * Copyright : ©2022 DJI All Rights Reserved.
  */
 class LiveStreamVM(
-    private val deviceDataRepository: DeviceDataRepository
+    private val streamRepository: StreamRepository
 ) : DJIViewModel() {
     private val availableCameraUpdatedListener: ICameraStreamManager.AvailableCameraUpdatedListener
     private val liveStreamStatusListener: LiveStreamStatusListener
@@ -71,16 +66,11 @@ class LiveStreamVM(
 
     private var repeatJob: Job? = null
 
-    private val _deviceDataResponse = MutableLiveData<DeviceDataResponse>()
-    val deviceDataResponse: LiveData<DeviceDataResponse> = _deviceDataResponse
+    private val _device = MutableLiveData<DeviceUiModel>()
+    val device: LiveData<DeviceUiModel> = _device
 
-    var rabbitMqQueueStream = ""
-    var userUuid = ""
-    lateinit var deviceData: DeviceData
-
-    private val _deviceData = MutableLiveData<DeviceDataResponse>()
-    val deviceDataSet: LiveData<DeviceDataResponse> = _deviceData
-
+    private val _loading = MutableLiveData<Boolean>(false)
+    val loading: LiveData<Boolean> = _loading
     init {
         liveStreamStatusListener = object : LiveStreamStatusListener {
             override fun onLiveStreamStatusUpdate(status: LiveStreamStatus?) {
@@ -103,46 +93,24 @@ class LiveStreamVM(
         addListener()
     }
 
-    fun connectServer(deviceData: DeviceData) {
-        viewModelScope.launch {
+
+    fun startStream(startStream: StartStream) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _loading.postValue(true)
             try {
-                _deviceData.postValue(deviceDataRepository.connectServer(deviceData))
+                _device.postValue(streamRepository.startStream(startStream).deviceData.toUiModel())
+                _loading.postValue(false)
             } catch (e: Exception) {
-                //e.printStackTrace()
                 _error.postValue(e.message)
+                _loading.postValue(false)
             }
         }
     }
 
-    fun disconnectServer(deviceStreamRequest: DeviceStreamRequest) {
-        viewModelScope.launch {
-            try {
-                deviceDataRepository.disconnectServer(deviceStreamRequest)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+    fun disconnectDevice(idDevice: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            streamRepository.disconnectDevice(idDevice)
         }
-    }
-
-    fun setRemoteDeviceData(deviceData: DeviceData) {
-        viewModelScope.launch {
-            try {
-                _deviceDataResponse.postValue(deviceDataRepository.setDeviceData(deviceData))
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    fun deviceStream(deviceStreamRequest: DeviceStreamRequest) {
-        viewModelScope.launch {
-            deviceDataRepository.deviceStream(deviceStreamRequest)
-        }
-    }
-
-    fun setUserId(userId: String) {
-        this.userUuid = userId
-        rabbitMqQueueStream = "stream_drone_${userId}"
     }
 
     override fun onCleared() {

@@ -4,10 +4,11 @@ import com.sst.data.model.api.SstPlayApi
 import com.sst.data.model.request.StartStream
 import com.sst.data.model.response.DeviceDataResponse
 import com.sst.data.model.response.Response
+import com.sst.data.model.response.StartStreamResponse
 
 
 interface StreamRepository {
-    suspend fun startStream(startStream: StartStream): DeviceDataResponse
+    suspend fun startStream(startStream: StartStream): StartStreamResponse
     suspend fun disconnectDevice(deviceId: String): Response
 }
 

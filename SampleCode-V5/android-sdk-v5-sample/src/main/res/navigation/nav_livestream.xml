@@ -19,6 +19,16 @@
         android:id="@+id/navigation_login_password"
         android:name="dji.sampleV5.aircraft.views.login.LoginPasswordFragment"
         android:label="main_page"
-        tools:layout="@layout/fragment_login"/>
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_navigation_login_password_to_navigation_livestreaming"
+            app:destination="@id/navigation_livestreaming" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_livestreaming"
+        android:name="dji.sampleV5.aircraft.views.LiveStreamingFragment"
+        android:label="main_page"
+        tools:layout="@layout/fragment_live_streaming"/>
 
 </navigation>
