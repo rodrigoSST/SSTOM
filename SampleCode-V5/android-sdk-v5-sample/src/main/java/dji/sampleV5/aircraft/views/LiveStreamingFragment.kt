@@ -429,25 +429,24 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         }
 
         liveStreamVM.device.observe(viewLifecycleOwner) {
-            lifecycleScope.launch {
-                if (!isStreaming) {
-                    urlReceive = it.urlReceive
-                    thread(start = true) {
-                        Thread.sleep(10000)
-                        lifecycleScope.launch(Dispatchers.IO) {
-                            try {
-                                streamer.startStream(it.urlTransmit)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                ToastUtils.showToast(e.message ?: "")
-                                binding.fbStartStop.setImageResource(R.drawable.ic_play)
-                            }
+            if (!isStreaming) {
+                urlReceive = it.urlReceive
+                thread(start = true) {
+                    Thread.sleep(10000)
+                    lifecycleScope.launch {
+                        try {
+                            streamer.startStream(it.urlTransmit)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            ToastUtils.showToast(e.message ?: "")
+                            binding.fbStartStop.setImageResource(R.drawable.ic_play)
+                            idDevice?.let { it1 -> liveStreamVM.disconnectDevice(it1) }
                         }
                     }
-                } else {
-                    streamer.stopStream()
-                    streamer.disconnect()
                 }
+            } else {
+                streamer.stopStream()
+                streamer.disconnect()
             }
         }
     }
