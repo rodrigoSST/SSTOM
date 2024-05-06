@@ -12,12 +12,12 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface SstPlayApi {
-    @POST("/api/login/")
+    @POST("/api/login")
     suspend fun doLogin(
         @Body login: LoginRequest
     ): LoginResponse
 
-    @POST("/api/start_stream/")
+    @POST("/api/start_stream")
     suspend fun startStream(
         @Body startStream: StartStream
     ): StartStreamResponse

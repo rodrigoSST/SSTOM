@@ -435,8 +435,12 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                     Thread.sleep(10000)
                     lifecycleScope.launch {
                         try {
+                            binding.loading.isVisible = false
+                            isStreaming = true
                             streamer.startStream(it.urlTransmit)
                         } catch (e: Exception) {
+                            binding.loading.isVisible = false
+                            isStreaming = false
                             e.printStackTrace()
                             ToastUtils.showToast(e.message ?: "")
                             binding.fbStartStop.setImageResource(R.drawable.ic_play)
@@ -445,6 +449,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                     }
                 }
             } else {
+                isStreaming = false
                 streamer.stopStream()
                 streamer.disconnect()
             }
@@ -716,24 +721,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         }
     }
 
-    private fun startStream() {
-        liveStreamVM.startStream(object : CommonCallbacks.CompletionCallback {
-            override fun onSuccess() {
-                ToastUtils.showToast(StringUtils.getResStr(R.string.msg_start_live_stream_success))
-                binding.fbStartStop.setImageResource(R.drawable.ic_stop)
-            }
-
-            override fun onFailure(error: IDJIError) {
-                ToastUtils.showToast(
-                    StringUtils.getResStr(
-                        R.string.msg_start_live_stream_failed,
-                        error.description()
-                    )
-                )
-            }
-        })
-    }
-
     private fun stopStream() {
         liveStreamVM.stopStream(object : CommonCallbacks.CompletionCallback {
             override fun onSuccess() {
@@ -773,6 +760,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     }
 
     private fun startSrtStream() {
+        binding.loading.isVisible = true
         lifecycleScope.launch {
             val location = liveStreamVM.getAircraftLocation()
             idDevice?.let {
