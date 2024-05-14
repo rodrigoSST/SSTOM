@@ -29,6 +29,7 @@ allprojects {
         maven {
             url KOTLIN_MAVEN
         }
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
         maven { url JITPACK_MAVEN_URL }
         repositories {
             flatDir {

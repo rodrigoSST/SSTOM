@@ -40,6 +40,9 @@ class MainActivity : AppCompatActivity() {
         Manifest.permission.KILL_BACKGROUND_PROCESSES,
         Manifest.permission.ACCESS_COARSE_LOCATION,
         Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.BLUETOOTH,
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.MODIFY_AUDIO_SETTINGS
     )
 
     init {

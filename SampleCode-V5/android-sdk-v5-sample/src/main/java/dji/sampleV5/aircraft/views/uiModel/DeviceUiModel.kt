@@ -13,6 +13,7 @@ data class DeviceUiModel(
     val latitude: Double,
     val longitude: Double,
     val status: String,
+    val streamId: String,
     val urlTransmit: String,
     val urlReceive: String,
     @DrawableRes val image: Int,

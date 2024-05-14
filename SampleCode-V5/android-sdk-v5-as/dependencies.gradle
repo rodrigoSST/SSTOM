@@ -119,4 +119,7 @@ ext {
     //Exoplayer
     deps.exoplayer = "com.google.android.exoplayer:exoplayer:2.19.1"
 
+    //Antmedia
+    deps.antmedia = "io.antmedia:webrtc-android-framework:2.8.0-SNAPSHOT"
+
 }

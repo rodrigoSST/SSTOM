@@ -13,6 +13,7 @@ fun DeviceDataResponse.toUiModel() = DeviceUiModel(
     status = status ?: "",
     image = 0,
     address = "",
+    streamId = streamId,
     urlTransmit = urlTransmit(this.ipTransmit, this.portTransmit.toString()),
     urlReceive = urlReceive(this.ipReceive, this.portReceive.toString(), this.streamId)
 )

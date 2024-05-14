@@ -88,6 +88,7 @@ import dji.v5.ux.training.simulatorcontrol.SimulatorControlWidget.UIState.Visibi
 import dji.v5.ux.visualcamera.CameraNDVIPanelWidget
 import dji.v5.ux.visualcamera.CameraVisiblePanelWidget
 import dji.v5.ux.visualcamera.zoom.FocalZoomWidget
+import io.antmedia.webrtcandroidframework.api.IWebRTCClient
 import io.github.thibaultbee.streampack.data.VideoConfig
 import io.github.thibaultbee.streampack.error.StreamPackError
 import io.github.thibaultbee.streampack.listeners.OnConnectionListener
@@ -172,9 +173,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         arguments?.getString(EXTRA_ID_DEVICE)
     }
 
-    private var player: Player? = null
-    private lateinit var urlReceive: String
-
+    private lateinit var streamId: String
 
     private var compositeDisposable: CompositeDisposable? = null
     private val cameraSourceProcessor = DataProcessor.create(
@@ -192,31 +191,39 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private val errorListener = object : OnErrorListener {
         override fun onError(error: StreamPackError) {
             toast("An error occurred: $error")
-            binding.fbStartStop.setImageResource(R.drawable.ic_play)
-            isStreaming = false
+            activity?.runOnUiThread {
+                binding.fbStartStop.setImageResource(R.drawable.ic_play)
+                isStreaming = false
+            }
         }
     }
 
     private val connectionListener = object : OnConnectionListener {
         override fun onFailed(message: String) {
             toast("Connection failed: $message")
-            binding.fbStartStop.setImageResource(R.drawable.ic_play)
-            idDevice?.let { liveStreamVM.disconnectDevice(it) }
-            isStreaming = false
+            activity?.runOnUiThread {
+                binding.fbStartStop.setImageResource(R.drawable.ic_play)
+                idDevice?.let { liveStreamVM.disconnectDevice(it) }
+                isStreaming = false
+            }
         }
 
         override fun onLost(message: String) {
             toast("Connection lost: $message")
-            binding.fbStartStop.setImageResource(R.drawable.ic_play)
-            idDevice?.let { liveStreamVM.disconnectDevice(it) }
-            isStreaming = false
+            activity?.runOnUiThread {
+                binding.fbStartStop.setImageResource(R.drawable.ic_play)
+                idDevice?.let { liveStreamVM.disconnectDevice(it) }
+                isStreaming = false
+            }
         }
 
         override fun onSuccess() {
-            binding.fbStartStop.setImageResource(R.drawable.ic_stop)
-            startPlayer()
-            isStreaming = true
-            toast("Connected")
+            toast(getString(R.string.connected))
+            activity?.runOnUiThread {
+                binding.fbStartStop.setImageResource(R.drawable.ic_stop)
+                playerStream()
+                isStreaming = true
+            }
         }
     }
 
@@ -230,12 +237,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     }
 
     private val streamerLifeCycleObserver by lazy { StreamerLifeCycleObserver(streamer) }
-
-    private fun toast(message: String) {
-        activity?.runOnUiThread {
-            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-        }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -322,6 +323,12 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         setupObservers()
 
 
+    }
+
+    private fun toast(message: String) {
+        activity?.runOnUiThread {
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -430,7 +437,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
         liveStreamVM.device.observe(viewLifecycleOwner) {
             if (!isStreaming) {
-                urlReceive = it.urlReceive
+                streamId = it.streamId
                 thread(start = true) {
                     Thread.sleep(10000)
                     lifecycleScope.launch {
@@ -448,12 +455,18 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                         }
                     }
                 }
-            } else {
-                isStreaming = false
-                streamer.stopStream()
-                streamer.disconnect()
             }
         }
+    }
+
+    private fun playerStream() {
+        val webRTCClient: IWebRTCClient = IWebRTCClient.builder()
+            .setActivity(activity)
+            .addRemoteVideoRenderer(binding.playerView)
+            .setServerUrl(WEBRTC_HOST)
+            .build()
+
+        webRTCClient.play(streamId)
     }
 
     private fun updateLiveStreamInfo() {
@@ -667,7 +680,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             primaryFpvWidget.updateVideoSource(secondaryStreamSource, secondaryVideoChannel)
             secondaryFPVWidget.updateVideoSource(primaryStreamSource, primaryVideoChannel)
 
-            if (restartStreaming) startStreamFrameByFrame()
+            //if (restartStreaming) startStreamFrameByFrame()
         }
     }
 
@@ -740,25 +753,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         })
     }
 
-    private fun startStreamFrameByFrame() {
-        videoDecoder?.let {
-            videoDecoder!!.onPause()
-            videoDecoder!!.destroy()
-            videoDecoder = null
-        }
-        videoDecoder = VideoDecoder(
-            context,
-            primaryFpvWidget.videoChannelType,
-            DecoderOutputMode.YUV_MODE,
-            primaryFpvWidget.fpvSurfaceView.holder,
-            curWidth,
-            curHeight
-        )
-        videoDecoder?.addYuvDataListener(this)
-        isStreaming = true
-        binding.fbStartStop.setImageResource(R.drawable.ic_stop)
-    }
-
     private fun startSrtStream() {
         binding.loading.isVisible = true
         lifecycleScope.launch {
@@ -776,6 +770,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     }
 
     private fun stopSrtStreaming() {
+        idDevice?.let { liveStreamVM.disconnectDevice(it) }
         streamer.stopStream()
         streamer.disconnect()
         isStreaming = false
@@ -1446,39 +1441,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         //liveStreamVM.publishMessage(bitmapToByteArray(bitmap))
     }
 
-    private fun startPlayer() {
-        activity?.runOnUiThread {
-            player = buildPlayer(urlReceive)
-            binding.playerView.player = player
-        }
-    }
-
-    private fun releasePlayer(player: Player) {
-        player.stop()
-        player.release()
-    }
-
-    private fun buildPlayer(url: String?): Player {
-        val mediaItem = MediaItem.Builder()
-            .setUri(url)
-            .setCustomCacheKey("")
-            .build()
-
-        val source =
-            ProgressiveMediaSource.Factory(SrtDataSourceFactory(), TsOnlyExtractorFactory())
-                .createMediaSource(mediaItem)
-
-
-        val player = ExoPlayer.Builder(requireContext())
-            .build()
-        player.setMediaSource(source)
-
-        player.prepare()
-        player.play()
-        player.playWhenReady = true
-        return player
-    }
-
     override fun onStop() {
         stopSrtStreaming()
         super.onStop()
@@ -1486,5 +1448,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
     companion object {
         const val EXTRA_ID_DEVICE = "EXTRA_ID_DEVICE"
+        const val WEBRTC_HOST = "wss://ec2-3-88-125-209.compute-1.amazonaws.com:5443/WebRTCAppEE/websocket"
     }
 }
