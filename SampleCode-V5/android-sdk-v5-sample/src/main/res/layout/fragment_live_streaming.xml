@@ -300,6 +300,7 @@
             android:layout_marginHorizontal="24dp"
             android:layout_marginBottom="90dp"
             android:elevation="100dp"
+            android:backgroundTint="@color/black"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 

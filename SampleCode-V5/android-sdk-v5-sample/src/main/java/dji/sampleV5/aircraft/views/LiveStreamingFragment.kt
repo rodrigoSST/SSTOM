@@ -2,66 +2,37 @@ package dji.sampleV5.aircraft.views
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.ImageFormat
-import android.graphics.Paint
-import android.graphics.Rect
-import android.graphics.RectF
-import android.graphics.YuvImage
-import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.os.Bundle
-import android.text.TextUtils
 import android.util.Size
 import android.view.LayoutInflater
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.Toast
 import androidx.annotation.RequiresPermission
-import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.sst.data.model.request.StartStream
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
 import dji.sampleV5.aircraft.models.LiveStreamVM
 import dji.sampleV5.aircraft.pages.DJIFragment
 import dji.sampleV5.aircraft.srt.streamers.SurfaceSrtLiveStreamer
-import dji.sampleV5.aircraft.srtPlayer.SrtDataSourceFactory
-import dji.sampleV5.aircraft.srtPlayer.TsOnlyExtractorFactory
 import dji.sampleV5.aircraft.util.ToastUtils
-import dji.sampleV5.aircraft.utils.ai.ObjectDetectorHelper
 import dji.sdk.keyvalue.value.common.CameraLensType
-import dji.v5.common.callback.CommonCallbacks
 import dji.v5.common.error.IDJIError
 import dji.v5.common.video.channel.VideoChannelState
 import dji.v5.common.video.channel.VideoChannelType
-import dji.v5.common.video.decoder.DecoderOutputMode
-import dji.v5.common.video.decoder.VideoDecoder
 import dji.v5.common.video.interfaces.IVideoDecoder
 import dji.v5.common.video.interfaces.VideoChannelStateChangeListener
-import dji.v5.common.video.interfaces.YuvDataListener
 import dji.v5.common.video.stream.PhysicalDevicePosition
 import dji.v5.common.video.stream.StreamSource
 import dji.v5.manager.datacenter.MediaDataCenter
-import dji.v5.manager.datacenter.livestream.LiveStreamType
-import dji.v5.manager.datacenter.livestream.LiveVideoBitrateMode
-import dji.v5.manager.datacenter.livestream.StreamQuality
 import dji.v5.utils.common.JsonUtil
 import dji.v5.utils.common.LogUtils
-import dji.v5.utils.common.StringUtils
 import dji.v5.ux.cameracore.widget.autoexposurelock.AutoExposureLockWidget
 import dji.v5.ux.cameracore.widget.cameracontrols.CameraControlsWidget
 import dji.v5.ux.cameracore.widget.cameracontrols.exposuresettings.ExposureSettingsPanel
@@ -88,7 +59,9 @@ import dji.v5.ux.training.simulatorcontrol.SimulatorControlWidget.UIState.Visibi
 import dji.v5.ux.visualcamera.CameraNDVIPanelWidget
 import dji.v5.ux.visualcamera.CameraVisiblePanelWidget
 import dji.v5.ux.visualcamera.zoom.FocalZoomWidget
+import io.antmedia.webrtcandroidframework.api.DefaultWebRTCListener
 import io.antmedia.webrtcandroidframework.api.IWebRTCClient
+import io.antmedia.webrtcandroidframework.api.IWebRTCListener
 import io.github.thibaultbee.streampack.data.VideoConfig
 import io.github.thibaultbee.streampack.error.StreamPackError
 import io.github.thibaultbee.streampack.listeners.OnConnectionListener
@@ -297,9 +270,24 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         webRTCClient = IWebRTCClient.builder()
             .setActivity(activity)
             .addRemoteVideoRenderer(binding.playerView)
+            .setWebRTCListener(createWebRTCListener())
             .setServerUrl(WEBRTC_HOST)
+            .setAudioCallEnabled(false)
             .build()
 
+    }
+
+    private fun createWebRTCListener(): IWebRTCListener {
+        return object : DefaultWebRTCListener() {
+            override fun onPlayStarted(streamId: String) {
+                super.onPlayStarted(streamId)
+                val i = streamId
+            }
+
+            override fun onPlayFinished(streamId: String) {
+                super.onPlayFinished(streamId)
+            }
+        }
     }
 
     private fun toast(message: String) {
@@ -412,7 +400,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                             binding.loading.isVisible = false
                             isStreaming = true
                             streamer.startStream(it.urlTransmit)
-                            playerStream()
+                            //playerStream()
                         } catch (e: Exception) {
                             e.printStackTrace()
                             binding.loading.isVisible = false
@@ -658,6 +646,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         streamer.disconnect()
         isStreaming = false
         binding.fbStartStop.setImageResource(R.drawable.ic_play)
+        webRTCClient.stop(streamId)
     }
 
     private fun playerStream() {
