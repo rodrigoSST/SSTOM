@@ -469,4 +469,15 @@
     <string name="title_select_yuv_format">选择图片格式</string>
     <string name="title_select_yuv_format_ok">确定</string>
     <string name="title_select_yuv_format_cancel">取消</string>
+
+    <string name="live_streaming">Live Streaming</string>
+    <string name="login">Login</string>
+    <string name="continue_button">Continue</string>
+    <string name="fill_the_info">Fill in the following information:</string>
+    <string name="what_is_your_email">What is your email?</string>
+    <string name="fill_the_field">Fill this field to continue</string>
+    <string name="what_is_your_password">What is your password?</string>
+    <string name="connected">Connected</string>
+    <string name="connection_lost">Connection lost: %s</string>
+    <string name="an_error_occurred">An error occurred: %s</string>
 </resources>

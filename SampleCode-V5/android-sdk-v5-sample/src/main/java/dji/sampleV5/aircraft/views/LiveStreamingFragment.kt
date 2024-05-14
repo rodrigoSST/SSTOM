@@ -97,12 +97,8 @@ import io.github.thibaultbee.streampack.streamers.StreamerLifeCycleObserver
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.functions.Consumer
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import org.tensorflow.lite.task.vision.detector.Detection
-import java.io.ByteArrayOutputStream
-import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
@@ -113,23 +109,13 @@ import kotlin.concurrent.thread
  * CreateDate : 2022/3/23 10:58 上午
  * Copyright : ©2022 DJI All Rights Reserved.
  */
-class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder.Callback,
-    YuvDataListener, ObjectDetectorHelper.DetectorListener {
+class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder.Callback {
 
     private var _binding: FragmentLiveStreamingBinding? = null
     private val binding
         get() = _binding!!
 
     private val liveStreamVM: LiveStreamVM by viewModel()
-    private lateinit var dialog: AlertDialog
-    private lateinit var configDialog: AlertDialog
-    private var checkedItem: Int = -1
-    private var isConfigSelected = false
-    private var showStreamInfo = true
-    private var liveStreamType: LiveStreamType = LiveStreamType.UNKNOWN
-    private var liveStreamBitrateMode: LiveVideoBitrateMode = LiveVideoBitrateMode.AUTO
-    private var liveStreamQuality: StreamQuality = StreamQuality.HD
-    private val msg = "input is null"
 
     var fps: Int = -1
     var vbps: Int = -1
@@ -143,9 +129,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
     var curWidth: Int = -1
     var curHeight: Int = -1
-
-    private lateinit var objectDetectorHelper: ObjectDetectorHelper
-    private var isEnableAi = false
 
     private val TAG = LogUtils.getTag(this)
     private lateinit var primaryFpvWidget: FPVWidget
@@ -174,6 +157,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     }
 
     private lateinit var streamId: String
+    private lateinit var webRTCClient: IWebRTCClient
 
     private var compositeDisposable: CompositeDisposable? = null
     private val cameraSourceProcessor = DataProcessor.create(
@@ -186,11 +170,10 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private var secondaryChannelStateListener: VideoChannelStateChangeListener? = null
 
     private var videoDecoder: IVideoDecoder? = null
-    private var imageProcessed: Boolean = true
 
     private val errorListener = object : OnErrorListener {
         override fun onError(error: StreamPackError) {
-            toast("An error occurred: $error")
+            toast(String.format(getString(R.string.an_error_occurred), error))
             activity?.runOnUiThread {
                 binding.fbStartStop.setImageResource(R.drawable.ic_play)
                 isStreaming = false
@@ -200,19 +183,17 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
     private val connectionListener = object : OnConnectionListener {
         override fun onFailed(message: String) {
-            toast("Connection failed: $message")
+            toast(String.format(getString(R.string.connection_failed), message))
             activity?.runOnUiThread {
                 binding.fbStartStop.setImageResource(R.drawable.ic_play)
-                idDevice?.let { liveStreamVM.disconnectDevice(it) }
                 isStreaming = false
             }
         }
 
         override fun onLost(message: String) {
-            toast("Connection lost: $message")
+            toast(String.format(getString(R.string.connection_lost), message))
             activity?.runOnUiThread {
                 binding.fbStartStop.setImageResource(R.drawable.ic_play)
-                idDevice?.let { liveStreamVM.disconnectDevice(it) }
                 isStreaming = false
             }
         }
@@ -252,10 +233,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         super.onViewCreated(view, savedInstanceState)
         view.setLayerType(View.LAYER_TYPE_NONE, null)
 
-        objectDetectorHelper = ObjectDetectorHelper(
-            context = requireContext(), objectDetectorListener = this
-        )
-
         fpvParentView = view.findViewById<ConstraintLayout>(R.id.fpv_holder)
         fpvParentView.setLayerType(View.LAYER_TYPE_NONE, null)
         topBarPanel = view.findViewById<TopBarPanelWidget>(R.id.panel_top_bar)
@@ -289,11 +266,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         cameraControlsWidget.exposureSettingsIndicatorWidget
             .setStateChangeResourceId(dji.v5.ux.R.id.panel_camera_controls_exposure_settings)
 
-        binding.btnAi.setOnClickListener {
-            isEnableAi = !isEnableAi
-            binding.overlay.isVisible = isEnableAi
-        }
-
 
         MediaDataCenter.getInstance().videoStreamManager.addStreamSourcesListener { sources: List<StreamSource>? ->
             activity?.runOnUiThread { updateFPVWidgetSource(sources) }
@@ -322,6 +294,11 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         initListener()
         setupObservers()
 
+        webRTCClient = IWebRTCClient.builder()
+            .setActivity(activity)
+            .addRemoteVideoRenderer(binding.playerView)
+            .setServerUrl(WEBRTC_HOST)
+            .build()
 
     }
 
@@ -391,14 +368,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
     private fun initListener() {
         binding.fbStartStop.setOnClickListener(this)
-        binding.fbStreamingChannel.setOnClickListener(this)
-        binding.fbStreamingInfo.setOnClickListener(this)
-        binding.fbStreamingQuality.setOnClickListener(this)
-        binding.fbStreamingBitrate.setOnClickListener(this)
-        binding.btnGetLiveStreamBitRate.setOnClickListener(this)
-        binding.btnSetLiveStreamBitRate.setOnClickListener(this)
-        binding.btnGetLiveStreamBitRateMode.setOnClickListener(this)
-        binding.btnSetLiveStreamBitRateMode.setOnClickListener(this)
 
         secondaryFPVWidget.setOnClickListener { v: View? -> swapVideoSource() }
         initChannelStateListener()
@@ -420,14 +389,12 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                 packet_loss = it.packetLoss
                 packet_cache_len = it.packetCacheLen
                 rtt = it.rtt
-                updateLiveStreamInfo()
             }
         }
 
         liveStreamVM.liveStreamError.observe(viewLifecycleOwner) {
             it?.let {
                 error = it
-                updateLiveStreamInfo()
             }
         }
 
@@ -439,59 +406,23 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             if (!isStreaming) {
                 streamId = it.streamId
                 thread(start = true) {
-                    Thread.sleep(10000)
+                    Thread.sleep(25000)
                     lifecycleScope.launch {
                         try {
                             binding.loading.isVisible = false
                             isStreaming = true
                             streamer.startStream(it.urlTransmit)
+                            playerStream()
                         } catch (e: Exception) {
+                            e.printStackTrace()
                             binding.loading.isVisible = false
                             isStreaming = false
-                            e.printStackTrace()
-                            ToastUtils.showToast(e.message ?: "")
-                            binding.fbStartStop.setImageResource(R.drawable.ic_play)
-                            idDevice?.let { it1 -> liveStreamVM.disconnectDevice(it1) }
+                            stopSrtStreaming()
                         }
                     }
                 }
             }
         }
-    }
-
-    private fun playerStream() {
-        val webRTCClient: IWebRTCClient = IWebRTCClient.builder()
-            .setActivity(activity)
-            .addRemoteVideoRenderer(binding.playerView)
-            .setServerUrl(WEBRTC_HOST)
-            .build()
-
-        webRTCClient.play(streamId)
-    }
-
-    private fun updateLiveStreamInfo() {
-        val liveStreamInfo = "\nfps: ${fps}fps \n" +
-                "vbps: ${vbps}Kbps \n" +
-                "isStreaming: $isStreaming \n" +
-                "resolution_w: $resolution_w \n" +
-                "resolution_h: $resolution_h \n" +
-                "packet_loss: ${packet_loss}% \n" +
-                "packet_cache_len: $packet_cache_len \n" +
-                "rtt: ${rtt}ms \n" +
-                "error: $error"
-        binding.tvLiveStreamInfo.text = liveStreamInfo
-    }
-
-    private fun clearLiveStreamInfo() {
-        fps = -1
-        vbps = -1
-        isStreaming = false
-        resolution_w = -1
-        resolution_h = -1
-        packet_loss = -1
-        packet_cache_len = -1
-        rtt = -1
-        binding.tvLiveStreamInfo.text = getString(R.string.n_a)
     }
 
     //endregion
@@ -702,55 +633,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                     stopSrtStreaming()
                 }
             }
-
-            R.id.fbStreamingInfo -> {
-                showStreamInfo = !showStreamInfo
-                binding.tvLiveStreamInfo.isVisible = showStreamInfo
-            }
-
-            R.id.fbStreamingQuality -> {
-                showSetLiveStreamQualityDialog()
-            }
-
-            R.id.fbStreamingBitrate -> {
-                binding.contentBitrate.isVisible = !binding.contentBitrate.isVisible
-            }
-
-            R.id.btn_set_live_stream_bit_rate_mode -> {
-                showSetLiveStreamBitRateModeDialog()
-            }
-
-            R.id.btn_get_live_stream_bit_rate_mode -> {
-                ToastUtils.showToast(liveStreamVM.getLiveVideoBitRateMode().name)
-            }
-
-            R.id.btn_set_live_stream_bit_rate -> {
-                showSetLiveStreamBitrateDialog()
-            }
-
-            R.id.btn_get_live_stream_bit_rate -> {
-                //ToastUtils.showToast(liveStreamVM.getLiveVideoBitRate().toString())
-            }
         }
-    }
-
-    private fun stopStream() {
-        liveStreamVM.stopStream(object : CommonCallbacks.CompletionCallback {
-            override fun onSuccess() {
-                ToastUtils.showToast(StringUtils.getResStr(R.string.msg_stop_live_stream_success))
-                clearLiveStreamInfo()
-                binding.fbStartStop.setImageResource(R.drawable.ic_play)
-            }
-
-            override fun onFailure(error: IDJIError) {
-                ToastUtils.showToast(
-                    StringUtils.getResStr(
-                        R.string.msg_stop_live_stream_failed,
-                        error.description()
-                    )
-                )
-            }
-        })
     }
 
     private fun startSrtStream() {
@@ -777,6 +660,9 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         binding.fbStartStop.setImageResource(R.drawable.ic_play)
     }
 
+    private fun playerStream() {
+        webRTCClient.play(streamId)
+    }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         curWidth = surfaceView.width
@@ -794,450 +680,12 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         streamer.stopPreview()
     }
 
-    private fun showSetLiveStreamRtmpConfigDialog() {
-        val factory = LayoutInflater.from(this@LiveStreamingFragment.requireContext())
-        val rtmpConfigView = factory.inflate(R.layout.dialog_livestream_rtmp_config_view, null)
-        val etRtmpUrl = rtmpConfigView.findViewById<EditText>(R.id.et_livestream_rtmp_config)
-        etRtmpUrl.setText(
-            liveStreamVM.getRtmpUrl().toCharArray(),
-            0,
-            liveStreamVM.getRtmpUrl().length
-        )
-        configDialog = this@LiveStreamingFragment.requireContext().let {
-            AlertDialog.Builder(it, R.style.Base_ThemeOverlay_AppCompat_Dialog_Alert)
-                .setIcon(android.R.drawable.ic_menu_camera)
-                .setTitle(R.string.ad_set_live_stream_rtmp_config)
-                .setCancelable(false)
-                .setView(rtmpConfigView)
-                .setPositiveButton(R.string.ad_confirm) { configDialog, _ ->
-                    kotlin.run {
-                        val inputValue = etRtmpUrl.text.toString()
-                        if (TextUtils.isEmpty(inputValue)) {
-                            ToastUtils.showToast(msg)
-                        } else {
-                            liveStreamVM.setRTMPConfig(inputValue)
-                        }
-                        configDialog.dismiss()
-                    }
-                }
-                .setNegativeButton(R.string.ad_cancel) { configDialog, _ ->
-                    kotlin.run {
-                        configDialog.dismiss()
-                    }
-                }
-                .create()
-        }
-        configDialog.show()
-    }
-
-    private fun showSetLiveStreamRtspConfigDialog() {
-        val factory = LayoutInflater.from(this@LiveStreamingFragment.requireContext())
-        val rtspConfigView = factory.inflate(R.layout.dialog_livestream_rtsp_config_view, null)
-        val etRtspUsername = rtspConfigView.findViewById<EditText>(R.id.et_livestream_rtsp_username)
-        val etRtspPassword = rtspConfigView.findViewById<EditText>(R.id.et_livestream_rtsp_password)
-        val etRtspPort = rtspConfigView.findViewById<EditText>(R.id.et_livestream_rtsp_port)
-        val rtspConfig = liveStreamVM.getRtspSettings()
-        if (!TextUtils.isEmpty(rtspConfig) && rtspConfig.length > 0) {
-            val configs = rtspConfig.trim().split("^_^")
-            etRtspUsername.setText(
-                configs[0].toCharArray(),
-                0,
-                configs[0].length
-            )
-            etRtspPassword.setText(
-                configs[1].toCharArray(),
-                0,
-                configs[1].length
-            )
-            etRtspPort.setText(
-                configs[2].toCharArray(),
-                0,
-                configs[2].length
-            )
-        }
-
-        configDialog = this@LiveStreamingFragment.requireContext().let {
-            AlertDialog.Builder(it, R.style.Base_ThemeOverlay_AppCompat_Dialog_Alert)
-                .setIcon(android.R.drawable.ic_menu_camera)
-                .setTitle(R.string.ad_set_live_stream_rtsp_config)
-                .setCancelable(false)
-                .setView(rtspConfigView)
-                .setPositiveButton(R.string.ad_confirm) { configDialog, _ ->
-                    kotlin.run {
-                        val inputUserName = etRtspUsername.text.toString()
-                        val inputPassword = etRtspPassword.text.toString()
-                        val inputPort = etRtspPort.text.toString()
-                        if (TextUtils.isEmpty(inputUserName) || TextUtils.isEmpty(inputPassword) || TextUtils.isEmpty(
-                                inputPort
-                            )
-                        ) {
-                            ToastUtils.showToast(msg)
-                        } else {
-                            try {
-                                liveStreamVM.setRTSPConfig(
-                                    inputUserName,
-                                    inputPassword,
-                                    inputPort.toInt()
-                                )
-                            } catch (e: NumberFormatException) {
-                                ToastUtils.showToast("RTSP port must be int value")
-                            }
-                        }
-                        configDialog.dismiss()
-                    }
-                }
-                .setNegativeButton(R.string.ad_cancel) { configDialog, _ ->
-                    kotlin.run {
-                        configDialog.dismiss()
-                    }
-                }
-                .create()
-        }
-        configDialog.show()
-    }
-
-    private fun showSetLiveStreamGb28181ConfigDialog() {
-        val factory = LayoutInflater.from(this@LiveStreamingFragment.requireContext())
-        val gbConfigView = factory.inflate(R.layout.dialog_livestream_gb28181_config_view, null)
-        val etGbServerIp = gbConfigView.findViewById<EditText>(R.id.et_livestream_gb28181_server_ip)
-        val etGbServerPort =
-            gbConfigView.findViewById<EditText>(R.id.et_livestream_gb28181_server_port)
-        val etGbServerId = gbConfigView.findViewById<EditText>(R.id.et_livestream_gb28181_server_id)
-        val etGbAgentId = gbConfigView.findViewById<EditText>(R.id.et_livestream_gb28181_agent_id)
-        val etGbChannel = gbConfigView.findViewById<EditText>(R.id.et_livestream_gb28181_channel)
-        val etGbLocalPort =
-            gbConfigView.findViewById<EditText>(R.id.et_livestream_gb28181_local_port)
-        val etGbPassword = gbConfigView.findViewById<EditText>(R.id.et_livestream_gb28181_password)
-
-        val gbConfig = liveStreamVM.getGb28181Settings()
-        if (!TextUtils.isEmpty(gbConfig) && gbConfig.isNotEmpty()) {
-            val configs = gbConfig.trim().split("^_^")
-            etGbServerIp.setText(
-                configs[0].toCharArray(),
-                0,
-                configs[0].length
-            )
-            etGbServerPort.setText(
-                configs[1].toCharArray(),
-                0,
-                configs[1].length
-            )
-            etGbServerId.setText(
-                configs[2].toCharArray(),
-                0,
-                configs[2].length
-            )
-            etGbAgentId.setText(
-                configs[3].toCharArray(),
-                0,
-                configs[3].length
-            )
-            etGbChannel.setText(
-                configs[4].toCharArray(),
-                0,
-                configs[4].length
-            )
-            etGbLocalPort.setText(
-                configs[5].toCharArray(),
-                0,
-                configs[5].length
-            )
-            etGbPassword.setText(
-                configs[6].toCharArray(),
-                0,
-                configs[6].length
-            )
-        }
-
-        configDialog = this@LiveStreamingFragment.requireContext().let {
-            AlertDialog.Builder(it, R.style.Base_ThemeOverlay_AppCompat_Dialog_Alert)
-                .setIcon(android.R.drawable.ic_menu_camera)
-                .setTitle(R.string.ad_set_live_stream_gb28181_config)
-                .setCancelable(false)
-                .setView(gbConfigView)
-                .setPositiveButton(R.string.ad_confirm) { configDialog, _ ->
-                    kotlin.run {
-                        val serverIp = etGbServerIp.text.toString()
-                        val serverPort = etGbServerPort.text.toString()
-                        val serverId = etGbServerId.text.toString()
-                        val agentId = etGbAgentId.text.toString()
-                        val channel = etGbChannel.text.toString()
-                        val localPort = etGbLocalPort.text.toString()
-                        val password = etGbPassword.text.toString()
-                        if (TextUtils.isEmpty(serverIp) || TextUtils.isEmpty(serverPort) || TextUtils.isEmpty(
-                                serverId
-                            ) || TextUtils.isEmpty(agentId) || TextUtils.isEmpty(channel) || TextUtils.isEmpty(
-                                localPort
-                            ) || TextUtils.isEmpty(password)
-                        ) {
-                            ToastUtils.showToast(msg)
-                        } else {
-                            try {
-                                liveStreamVM.setGB28181(
-                                    serverIp,
-                                    serverPort.toInt(),
-                                    serverId,
-                                    agentId,
-                                    channel,
-                                    localPort.toInt(),
-                                    password
-                                )
-                            } catch (e: NumberFormatException) {
-                                ToastUtils.showToast("RTSP port must be int value")
-                            }
-                        }
-                        configDialog.dismiss()
-                    }
-                }
-                .setNegativeButton(R.string.ad_cancel) { configDialog, _ ->
-                    kotlin.run {
-                        configDialog.dismiss()
-                    }
-                }
-                .create()
-        }
-        configDialog.show()
-    }
-
-    private fun showSetLiveStreamAgoraConfigDialog() {
-        val factory = LayoutInflater.from(this@LiveStreamingFragment.requireContext())
-        val agoraConfigView = factory.inflate(R.layout.dialog_livestream_agora_config_view, null)
-
-        val etAgoraChannelId =
-            agoraConfigView.findViewById<EditText>(R.id.et_livestream_agora_channel_id)
-        val etAgoraToken = agoraConfigView.findViewById<EditText>(R.id.et_livestream_agora_token)
-        val etAgoraUid = agoraConfigView.findViewById<EditText>(R.id.et_livestream_agora_uid)
-
-        val agoraConfig = liveStreamVM.getAgoraSettings()
-        if (!TextUtils.isEmpty(agoraConfig) && agoraConfig.length > 0) {
-            val configs = agoraConfig.trim().split("^_^")
-            etAgoraChannelId.setText(configs[0].toCharArray(), 0, configs[0].length)
-            etAgoraToken.setText(configs[1].toCharArray(), 0, configs[1].length)
-            etAgoraUid.setText(configs[2].toCharArray(), 0, configs[2].length)
-        }
-
-        configDialog = this@LiveStreamingFragment.requireContext().let {
-            AlertDialog.Builder(it, R.style.Base_ThemeOverlay_AppCompat_Dialog_Alert)
-                .setIcon(android.R.drawable.ic_menu_camera)
-                .setTitle(R.string.ad_set_live_stream_agora_config)
-                .setCancelable(false)
-                .setView(agoraConfigView)
-                .setPositiveButton(R.string.ad_confirm) { configDialog, _ ->
-                    kotlin.run {
-                        val channelId = etAgoraChannelId.text.toString()
-                        val token = etAgoraToken.text.toString()
-                        val uid = etAgoraUid.text.toString()
-                        if (TextUtils.isEmpty(channelId) || TextUtils.isEmpty(token) || TextUtils.isEmpty(
-                                uid
-                            )
-                        ) {
-                            ToastUtils.showToast(msg)
-                        } else {
-                            liveStreamVM.setAgoraConfig(channelId, token, uid)
-                        }
-                        configDialog.dismiss()
-                    }
-                }
-                .setNegativeButton(R.string.ad_cancel) { configDialog, _ ->
-                    kotlin.run {
-                        configDialog.dismiss()
-                    }
-                }
-                .create()
-        }
-        configDialog.show()
-    }
-
-    private fun showSetLiveStreamBitrateDialog() {
-        val editText = EditText(this@LiveStreamingFragment.requireContext())
-        dialog = this@LiveStreamingFragment.requireContext().let {
-            AlertDialog.Builder(it, R.style.Base_ThemeOverlay_AppCompat_Dialog_Alert)
-                .setIcon(android.R.drawable.ic_menu_camera)
-                .setTitle(R.string.ad_set_live_stream_bit_rate)
-                .setCancelable(false)
-                .setView(editText)
-                .setPositiveButton(R.string.ad_confirm) { dialog, _ ->
-                    kotlin.run {
-                        var inputValue = -1
-                        try {
-                            editText.text?.let {
-                                inputValue = it.toString().toInt()
-                            } ?: let {
-                                inputValue = -1
-                            }
-                        } catch (e: Exception) {
-                            inputValue = -1
-                        }
-
-                        if (inputValue == -1) {
-                            ToastUtils.showToast("input is invalid")
-                        } else {
-                            liveStreamVM.setLiveVideoBitRate(inputValue)
-                        }
-                        dialog.dismiss()
-                    }
-                }
-                .setNegativeButton(R.string.ad_cancel) { dialog, _ ->
-                    kotlin.run {
-                        dialog.dismiss()
-                    }
-                }
-                .create()
-        }
-        dialog.show()
-    }
-
-    private fun showSetLiveStreamQualityDialog() {
-        val liveStreamQualities = liveStreamVM.getLiveStreamQualities()
-        liveStreamQualities.let {
-            val items = arrayOfNulls<String>(liveStreamQualities.size)
-            for (i in liveStreamQualities.indices) {
-                items[i] = liveStreamQualities[i].name
-            }
-            if (!items.isEmpty()) {
-                dialog = this@LiveStreamingFragment.requireContext().let {
-                    AlertDialog.Builder(it, R.style.Base_ThemeOverlay_AppCompat_Dialog_Alert)
-                        .setIcon(android.R.drawable.ic_menu_camera)
-                        .setTitle(R.string.ad_select_live_stream_quality)
-                        .setCancelable(false)
-                        .setSingleChoiceItems(items, checkedItem) { _, i ->
-                            checkedItem = i
-                            ToastUtils.showToast(
-                                "选择所使用的bitRateMode： " + (items[i]
-                                    ?: "选择所使用的bitRateMode为null"),
-                            )
-                        }
-                        .setPositiveButton(R.string.ad_confirm) { dialog, _ ->
-                            kotlin.run {
-                                liveStreamQuality = liveStreamQualities[checkedItem]
-                                liveStreamVM.setLiveStreamQuality(liveStreamQuality)
-                                dialog.dismiss()
-                            }
-                        }
-                        .setNegativeButton(R.string.ad_cancel) { dialog, _ ->
-                            kotlin.run {
-                                dialog.dismiss()
-                            }
-                        }
-                        .create()
-                }
-            }
-            dialog.show()
-        }
-    }
-
-    private fun showSetLiveStreamBitRateModeDialog() {
-        val liveStreamBitrateModes = liveStreamVM.getLiveStreamBitRateModes()
-        liveStreamBitrateModes.let {
-            val items = arrayOfNulls<String>(liveStreamBitrateModes.size)
-            for (i in liveStreamBitrateModes.indices) {
-                items[i] = liveStreamBitrateModes[i].name
-            }
-            if (!items.isEmpty()) {
-                dialog = this@LiveStreamingFragment.requireContext().let {
-                    AlertDialog.Builder(it, R.style.Base_ThemeOverlay_AppCompat_Dialog_Alert)
-                        .setIcon(android.R.drawable.ic_menu_camera)
-                        .setTitle(R.string.ad_select_live_stream_bit_rate_mode)
-                        .setCancelable(false)
-                        .setSingleChoiceItems(items, checkedItem) { _, i ->
-                            checkedItem = i
-                            ToastUtils.showToast(
-                                "选择所使用的bitRateMode： " + (items[i]
-                                    ?: "选择所使用的bitRateMode为null"),
-                            )
-                        }
-                        .setPositiveButton(getString(R.string.ad_confirm)) { dialog, _ ->
-                            kotlin.run {
-                                liveStreamBitrateMode = liveStreamBitrateModes[checkedItem]
-                                liveStreamVM.setLiveVideoBitRateMode(liveStreamBitrateMode)
-                                dialog.dismiss()
-                            }
-                        }
-                        .setNegativeButton(getString(R.string.ad_cancel)) { dialog, _ ->
-                            kotlin.run {
-                                dialog.dismiss()
-                            }
-                        }
-                        .create()
-                }
-            }
-            dialog.show()
-        }
-    }
-
-    private fun showSetLiveStreamConfigDialog() {
-        val liveStreamTypes = liveStreamVM.getLiveStreamTypes()
-        liveStreamTypes.let {
-            val items = arrayOfNulls<String>(liveStreamTypes.size)
-            for (i in liveStreamTypes.indices) {
-                items[i] = liveStreamTypes[i].name
-            }
-            if (!items.isEmpty()) {
-                dialog = this@LiveStreamingFragment.requireContext().let {
-                    AlertDialog.Builder(it, R.style.Base_ThemeOverlay_AppCompat_Dialog_Alert)
-                        .setIcon(android.R.drawable.ic_input_get)
-                        .setTitle(R.string.ad_select_live_stream_type)
-                        .setCancelable(false)
-                        .setSingleChoiceItems(items, checkedItem) { _, i ->
-                            checkedItem = i
-                            isConfigSelected = true
-                            ToastUtils.showToast(
-                                "选择的直播类型为： " + (items[i] ?: "直播类型为null"),
-                            )
-                        }
-                        .setPositiveButton(getString(R.string.ad_confirm)) { dialog, _ ->
-                            kotlin.run {
-                                if (isConfigSelected) {
-                                    liveStreamType = liveStreamTypes[checkedItem]
-                                    setLiveStreamConfig(liveStreamType)
-                                }
-                                dialog.dismiss()
-                                isConfigSelected = false
-                            }
-                        }
-                        .setNegativeButton(getString(R.string.ad_cancel)) { dialog, _ ->
-                            kotlin.run {
-                                dialog.dismiss()
-                                isConfigSelected = false
-                            }
-                        }
-                        .create()
-                }
-            }
-            dialog.show()
-        }
-    }
-
-    private fun setLiveStreamConfig(liveStreamtype: LiveStreamType) {
-        liveStreamtype.let {
-            when (liveStreamtype) {
-                LiveStreamType.RTMP -> {
-                    showSetLiveStreamRtmpConfigDialog()
-                }
-
-                LiveStreamType.RTSP -> {
-                    showSetLiveStreamRtspConfigDialog()
-                }
-
-                LiveStreamType.GB28181 -> {
-                    showSetLiveStreamGb28181ConfigDialog()
-                }
-
-                LiveStreamType.AGORA -> {
-                    showSetLiveStreamAgoraConfigDialog()
-                }
-
-                else -> {}
-            }
-        }
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
 
         if (isStreaming) {
-            stopStream()
+            stopSrtStreaming()
         }
 
         if (videoDecoder != null) {
@@ -1254,197 +702,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         var devicePosition: PhysicalDevicePosition,
         var lensType: CameraLensType
     )
-
-    override fun onReceive(mediaFormat: MediaFormat?, data: ByteArray?, width: Int, height: Int) {
-        if (imageProcessed) {
-            imageProcessed = false
-            saveYuvData(mediaFormat, data, width, height)
-        }
-    }
-
-    private fun saveYuvData(mediaFormat: MediaFormat?, data: ByteArray?, width: Int, height: Int) {
-        data?.let {
-            mediaFormat?.let {
-                when (it.getInteger(MediaFormat.KEY_COLOR_FORMAT)) {
-                    0, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar -> {
-                        newSaveYuvDataToJPEG(data, width, height)
-                    }
-
-                    MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar -> {
-                        newSaveYuvDataToJPEG420P(data, width, height)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun newSaveYuvDataToJPEG420P(yuvFrame: ByteArray, width: Int, height: Int) {
-        if (yuvFrame.size < width * height) {
-            return
-        }
-        val length = width * height
-        val u = ByteArray(width * height / 4)
-        val v = ByteArray(width * height / 4)
-        for (i in u.indices) {
-            u[i] = yuvFrame[length + i]
-            v[i] = yuvFrame[length + u.size + i]
-        }
-        for (i in u.indices) {
-            yuvFrame[length + 2 * i] = v[i]
-            yuvFrame[length + 2 * i + 1] = u[i]
-        }
-
-        screenShot(
-            yuvFrame,
-            width,
-            height
-        )
-    }
-
-    private fun newSaveYuvDataToJPEG(yuvFrame: ByteArray, width: Int, height: Int) {
-        if (yuvFrame.size < width * height) {
-            return
-        }
-        val length = width * height
-        val u = ByteArray(width * height / 4)
-        val v = ByteArray(width * height / 4)
-        for (i in u.indices) {
-            v[i] = yuvFrame[length + 2 * i]
-            u[i] = yuvFrame[length + 2 * i + 1]
-        }
-        for (i in u.indices) {
-            yuvFrame[length + 2 * i] = u[i]
-            yuvFrame[length + 2 * i + 1] = v[i]
-        }
-
-        screenShot(
-            yuvFrame,
-            width,
-            height
-        )
-    }
-
-    private fun screenShot(buf: ByteArray, width: Int, height: Int) {
-        val yuvImage = YuvImage(
-            buf,
-            ImageFormat.NV21,
-            width,
-            height,
-            null
-        )
-
-        val out = ByteArrayOutputStream()
-        yuvImage.compressToJpeg(Rect(0, 0, width, height), 100, out)
-        val imageBytes = out.toByteArray()
-        val image = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-        val mutableBitmap = image.copy(Bitmap.Config.ARGB_8888, true)
-
-        imageProcessed = true
-
-        if (isEnableAi) {
-            detectObjects(mutableBitmap)
-        } else {
-            //liveStreamVM.publishMessage(bitmapToByteArray(image))
-        }
-    }
-
-    private fun bitmapToByteArray(
-        bitmap: Bitmap,
-        format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG,
-        quality: Int = 30
-    ): ByteArray {
-        val byteArrayOutputStream = ByteArrayOutputStream()
-        bitmap.compress(format, quality, byteArrayOutputStream)
-        return byteArrayOutputStream.toByteArray()
-    }
-
-    private fun detectObjects(image: Bitmap) {
-        objectDetectorHelper.detect(image, 0)
-    }
-
-    override fun onError(error: String) {
-        TODO("Not yet implemented")
-    }
-
-    override fun onResults(
-        results: MutableList<Detection>?,
-        inferenceTime: Long,
-        imageHeight: Int,
-        imageWidth: Int,
-        bitmap: Bitmap
-    ) {
-        activity?.runOnUiThread {
-            binding.overlay.setResults(
-                results ?: LinkedList<Detection>(), imageHeight, imageWidth
-            )
-
-            binding.overlay.invalidate()
-
-            drawBitmap(
-                results ?: LinkedList<Detection>(), bitmap
-            )
-        }
-    }
-
-    private fun drawBitmap(
-        detectionResults: MutableList<Detection>, bitmap: Bitmap
-    ) {
-        val canvas = Canvas(bitmap)
-
-        val boxPaint = Paint()
-        val textBackgroundPaint = Paint()
-        val textPaint = Paint()
-        val bounds = Rect()
-
-        textBackgroundPaint.color = Color.BLACK
-        textBackgroundPaint.style = Paint.Style.FILL
-        textBackgroundPaint.textSize = 50f
-
-        textPaint.color = Color.WHITE
-        textPaint.style = Paint.Style.FILL
-        textPaint.textSize = 50f
-
-        boxPaint.color = ContextCompat.getColor(
-            requireContext(),
-            R.color.bounding_box_color
-        )
-        boxPaint.strokeWidth = 8F
-        boxPaint.style = Paint.Style.STROKE
-
-        for (result in detectionResults) {
-            val boundingBox = result.boundingBox
-
-            val top = boundingBox.top
-            val bottom = boundingBox.bottom
-            val left = boundingBox.left
-            val right = boundingBox.right
-
-            // Draw bounding box around detected objects
-            val drawableRect = RectF(left, top, right, bottom)
-            canvas.drawRect(drawableRect, boxPaint)
-
-            // Create text to display alongside detected objects
-            val drawableText =
-                result.categories[0].label + " " + String.format("%.2f", result.categories[0].score)
-
-            // Draw rect behind display text
-            textBackgroundPaint.getTextBounds(drawableText, 0, drawableText.length, bounds)
-            val textWidth = bounds.width()
-            val textHeight = bounds.height()
-            canvas.drawRect(
-                left, top, left + textWidth + 8, top + textHeight + 8, textBackgroundPaint
-            )
-
-            // Draw text for detected object
-            canvas.drawText(drawableText, left, top + bounds.height(), textPaint)
-        }
-        //liveStreamVM.publishMessage(bitmapToByteArray(bitmap))
-    }
-
-    override fun onStop() {
-        stopSrtStreaming()
-        super.onStop()
-    }
 
     companion object {
         const val EXTRA_ID_DEVICE = "EXTRA_ID_DEVICE"

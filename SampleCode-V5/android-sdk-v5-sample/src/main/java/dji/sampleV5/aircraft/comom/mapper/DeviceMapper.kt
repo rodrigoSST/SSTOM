@@ -25,7 +25,7 @@ fun urlTransmit(
 }
 
 fun urlReceive(
-    ipTransmit: String, portTransmit: String, streamId: String
+    ipReceive: String, portReceive: String, streamId: String
 ): String {
-    return "srt://${ipTransmit}:${portTransmit}?streamid=${streamId}"
+    return "srt://${ipReceive}:${portReceive}?streamid=${streamId}"
 }

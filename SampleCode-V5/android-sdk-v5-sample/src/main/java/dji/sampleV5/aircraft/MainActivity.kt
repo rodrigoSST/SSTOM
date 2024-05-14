@@ -41,8 +41,8 @@ class MainActivity : AppCompatActivity() {
         Manifest.permission.ACCESS_COARSE_LOCATION,
         Manifest.permission.ACCESS_FINE_LOCATION,
         Manifest.permission.BLUETOOTH,
-        Manifest.permission.BLUETOOTH_CONNECT,
-        Manifest.permission.MODIFY_AUDIO_SETTINGS
+        Manifest.permission.MODIFY_AUDIO_SETTINGS,
+        Manifest.permission.CAMERA,
     )
 
     init {
@@ -52,6 +52,7 @@ class MainActivity : AppCompatActivity() {
                 add(Manifest.permission.READ_MEDIA_VIDEO)
                 add(Manifest.permission.READ_MEDIA_AUDIO)
                 add(Manifest.permission.RECORD_AUDIO)
+                add(Manifest.permission.BLUETOOTH_CONNECT)
             } else {
                 add(Manifest.permission.READ_EXTERNAL_STORAGE)
                 add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
