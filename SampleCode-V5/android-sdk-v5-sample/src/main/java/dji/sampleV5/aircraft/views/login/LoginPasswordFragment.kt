@@ -4,20 +4,24 @@ import android.content.Context
 import android.os.Bundle
 import android.text.InputType
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import androidx.core.view.isVisible
 import androidx.navigation.fragment.findNavController
 import com.sst.data.model.request.LoginRequest
+import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.comom.extensions.pop
 import dji.sampleV5.aircraft.comom.extensions.safeLet
-import dji.sampleV5.aircraft.views.base.BaseActivityContract
-import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.data.MSDKInfo
-import org.koin.androidx.viewmodel.ext.android.viewModel
 import dji.sampleV5.aircraft.databinding.FragmentLoginBinding
 import dji.sampleV5.aircraft.enums.DeviceType
 import dji.sampleV5.aircraft.models.MSDKInfoModel
 import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.EXTRA_ID_DEVICE
+import dji.sampleV5.aircraft.views.base.BaseActivityContract
 import dji.sampleV5.aircraft.views.base.BaseFragment
 import dji.v5.utils.inner.SDKConfig
+import org.koin.androidx.viewmodel.ext.android.viewModel
+
 
 class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>(
     FragmentLoginBinding::inflate
@@ -49,26 +53,22 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
 
         binding.etField.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
 
-        binding.btnConfirm.setOnClickListener {
-            if (binding.etField.text.isNullOrEmpty()) {
-                binding.tiField.error = getString(R.string.fill_the_field)
-            } else {
-                safeLet(email, binding.etField.text.toString()) { emailLet, passwordLet ->
-                    val login = LoginRequest(
-                        emailLet,
-                        passwordLet,
-                        getDeviceId(),
-                        deviceModel,
-                        DeviceType.DRONE.type
-                    )
-                    viewModel.login(login)
-                }
+        binding.etField.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                doLogin()
+                return@setOnEditorActionListener true
             }
+            false
+        }
+
+        binding.btnConfirm.setOnClickListener {
+            doLogin()
         }
     }
 
     private fun setupObservers() {
         viewModel.login.observe(viewLifecycleOwner) {
+            hideKeyboard(binding.etField)
             savePrefs(it.userData.idUser, it.device.idDevice)
             if (it != null) {
                 findNavController().navigate(
@@ -82,6 +82,27 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
 
         viewModel.error.observe(viewLifecycleOwner) {
             showError(it)
+        }
+
+        viewModel.showLoading.observe(viewLifecycleOwner) {
+            binding.loading.isVisible = it
+        }
+    }
+
+    private fun doLogin() {
+        if (binding.etField.text.isNullOrEmpty()) {
+            binding.tiField.error = getString(R.string.fill_the_field)
+        } else {
+            safeLet(email, binding.etField.text.toString()) { emailLet, passwordLet ->
+                val login = LoginRequest(
+                    emailLet,
+                    passwordLet,
+                    getDeviceId(),
+                    deviceModel,
+                    DeviceType.DRONE.type
+                )
+                viewModel.login(login)
+            }
         }
     }
 
@@ -97,6 +118,11 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
         prefEdit?.putString(PREFS_USER_ID, userId)
         prefEdit?.putString(PREFS_DEVICE_ID, deviceId)
         prefEdit?.apply()
+    }
+
+    private fun hideKeyboard(editText: View) {
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(editText.windowToken, 0)
     }
 
     companion object {

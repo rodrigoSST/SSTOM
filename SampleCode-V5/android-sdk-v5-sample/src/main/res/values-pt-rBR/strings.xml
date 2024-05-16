@@ -474,5 +474,6 @@ Mais informações consulte as notas de lançamento."</string>
     <string name="connection_lost">Conexão perdida: %s</string>
     <string name="connection_failed">Falha na conexão: %s</string>
     <string name="an_error_occurred">Ocorreu um erro: %s</string>
+    <string name="starting_streamer">Iniciando streaming…</string>
 
 </resources>

@@ -18,10 +18,12 @@ class LoginViewModel(
     val login: LiveData<LoginResponse> = _login
     fun login(login: LoginRequest) {
         viewModelScope.launch(Dispatchers.IO) {
+            showLoading.postValue(true)
             try {
                 _login.postValue(loginRepository.doLogin(login))
             } catch (e: Exception) {
                 _error.postValue(e.message)
+                showLoading.postValue(false)
             }
         }
     }

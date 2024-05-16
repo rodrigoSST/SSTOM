@@ -4,6 +4,8 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.media.MediaFormat
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Size
 import android.view.LayoutInflater
 import android.view.SurfaceHolder
@@ -258,7 +260,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         secondaryFPVWidget.setSurfaceViewZOrderMediaOverlay(true)
 
         mapWidget.initAMap { map: DJIMap ->
-            // map.setOnMapClickListener(latLng -> onViewClick(mapWidget));
+            // map.setOnMapClickListener(latLng -> onViewClick(mapWidget))
             val uiSetting = map.uiSettings
             uiSetting?.setZoomControlsEnabled(false)
         }
@@ -397,13 +399,13 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                     Thread.sleep(25000)
                     lifecycleScope.launch {
                         try {
-                            binding.loading.isVisible = false
+                            binding.contentLoading.isVisible = false
                             isStreaming = true
                             streamer.startStream(it.urlTransmit)
                             //playerStream()
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            binding.loading.isVisible = false
+                            binding.contentLoading.isVisible = false
                             isStreaming = false
                             stopSrtStreaming()
                         }
@@ -625,7 +627,8 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     }
 
     private fun startSrtStream() {
-        binding.loading.isVisible = true
+        binding.contentLoading.isVisible = true
+
         lifecycleScope.launch {
             val location = liveStreamVM.getAircraftLocation()
             idDevice?.let {
@@ -650,7 +653,19 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     }
 
     private fun playerStream() {
-        webRTCClient.play(streamId)
+        val handler = Handler(Looper.getMainLooper())
+
+        val runnable = object : Runnable {
+            override fun run() {
+                try {
+                    webRTCClient.play(streamId)
+                } catch (e: Exception) {
+                    handler.postDelayed(this, 3000)
+                }
+            }
+        }
+
+        handler.post(runnable)
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {

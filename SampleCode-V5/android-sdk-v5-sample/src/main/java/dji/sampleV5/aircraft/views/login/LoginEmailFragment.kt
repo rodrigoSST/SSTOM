@@ -2,6 +2,7 @@ package dji.sampleV5.aircraft.views.login
 
 import android.os.Bundle
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import androidx.navigation.fragment.findNavController
 import dji.sampleV5.aircraft.views.base.BaseViewModel
 import dji.sampleV5.aircraft.R
@@ -37,19 +38,32 @@ class LoginEmailFragment : BaseFragment<FragmentLoginBinding, BaseViewModel>(
         binding.tiField.hint = getString(R.string.what_is_your_email)
 
         binding.btnConfirm.setOnClickListener {
-            if (binding.etField.text.isNullOrEmpty()) {
-                binding.tiField.error = getString(R.string.fill_the_field)
-            } else {
-                findNavController().navigate(
-                    R.id.action_navigation_login_email_to_navigation_login_password,
-                    Bundle().apply {
-                        putString(
-                            LoginPasswordFragment.EXTRA_EMAIL,
-                            binding.etField.text.toString()
-                        )
-                    }
-                )
+            next()
+        }
+
+        binding.etField.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                next()
+                return@setOnEditorActionListener true
             }
+            false
         }
     }
+
+    private fun next() {
+        if (binding.etField.text.isNullOrEmpty()) {
+            binding.tiField.error = getString(R.string.fill_the_field)
+        } else {
+            findNavController().navigate(
+                R.id.action_navigation_login_email_to_navigation_login_password,
+                Bundle().apply {
+                    putString(
+                        LoginPasswordFragment.EXTRA_EMAIL,
+                        binding.etField.text.toString()
+                    )
+                }
+            )
+        }
+    }
+
 }

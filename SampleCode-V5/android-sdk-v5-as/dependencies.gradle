@@ -122,4 +122,8 @@ ext {
     //Antmedia
     deps.antmedia = "io.antmedia:webrtc-android-framework:2.8.0-SNAPSHOT"
 
+    //Firebase
+    deps.crashlytics = "com.google.firebase:firebase-crashlytics-ktx"
+    deps.analytics = "com.google.firebase:firebase-analytics"
+
 }
