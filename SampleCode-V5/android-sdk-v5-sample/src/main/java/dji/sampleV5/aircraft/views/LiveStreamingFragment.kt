@@ -2,6 +2,7 @@ package dji.sampleV5.aircraft.views
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.location.Location
 import android.media.MediaFormat
 import android.os.Bundle
 import android.os.Handler
@@ -17,6 +18,13 @@ import androidx.annotation.RequiresPermission
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 import com.sst.data.model.request.StartStream
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
@@ -84,7 +92,8 @@ import kotlin.concurrent.thread
  * CreateDate : 2022/3/23 10:58 上午
  * Copyright : ©2022 DJI All Rights Reserved.
  */
-class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder.Callback {
+class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder.Callback,
+    OnMapReadyCallback {
 
     private var _binding: FragmentLiveStreamingBinding? = null
     private val binding
@@ -126,6 +135,9 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private lateinit var topBarPanel: TopBarPanelWidget
     private lateinit var fpvParentView: ConstraintLayout
     private lateinit var surfaceView: SurfaceView
+
+    private var map: GoogleMap? = null
+    private lateinit var mapFragment: SupportMapFragment
 
     private val idDevice by lazy {
         arguments?.getString(EXTRA_ID_DEVICE)
@@ -177,7 +189,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             toast(getString(R.string.connected))
             activity?.runOnUiThread {
                 binding.fbStartStop.setImageResource(R.drawable.ic_stop)
-                playerStream()
                 isStreaming = true
             }
         }
@@ -277,6 +288,38 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             .setAudioCallEnabled(false)
             .build()
 
+        //initMapView()
+
+    }
+
+    private fun initMapView() {
+        /*mapFragment =
+            (childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?)!!
+
+        mapFragment.getMapAsync(this@LiveStreamingFragment)*/
+    }
+
+    override fun onMapReady(googleMap: GoogleMap?) {
+        map = googleMap
+        getKnownLocation()
+    }
+
+    private fun getKnownLocation() {
+        val location = liveStreamVM.getAircraftLocation()
+        location?.let {
+            map?.addMarker(
+                MarkerOptions().position(
+                    LatLng(it.latitude, it.longitude)
+                ).title(getString(R.string.drone))
+            )
+
+            map?.moveCamera(
+                CameraUpdateFactory.newLatLngZoom(
+                    LatLng(location.latitude, location.longitude),
+                    2F
+                )
+            )
+        }
     }
 
     private fun createWebRTCListener(): IWebRTCListener {
@@ -623,6 +666,14 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                     stopSrtStreaming()
                 }
             }
+
+            R.id.fbAi -> {
+                if (!isStreaming) {
+                    playerStream()
+                } else {
+                    stopSrtStreaming()
+                }
+            }
         }
     }
 
@@ -649,7 +700,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         streamer.disconnect()
         isStreaming = false
         binding.fbStartStop.setImageResource(R.drawable.ic_play)
-        webRTCClient.stop(streamId)
+        stopPlayer()
     }
 
     private fun playerStream() {
@@ -666,6 +717,10 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         }
 
         handler.post(runnable)
+    }
+
+    private fun stopPlayer() {
+        webRTCClient.stop(streamId)
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {

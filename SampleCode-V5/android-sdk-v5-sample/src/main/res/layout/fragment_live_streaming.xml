@@ -253,6 +253,17 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:uxsdk_djiMap_mapType="normal" />
 
+        <!--<fragment
+            android:id="@+id/map"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="@dimen/uxsdk_150_dp"
+            android:layout_height="@dimen/uxsdk_100_dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="12dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:context=".ui.MapsActivity" />-->
+
         <dji.v5.ux.core.panel.systemstatus.SystemStatusListPanelWidget
             android:id="@+id/widget_panel_system_status_list"
             android:layout_width="0dp"
@@ -330,6 +341,15 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <ImageView
+        android:id="@+id/fbAi"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:layout_gravity="bottom|right"
+        android:layout_marginBottom="80dp"
+        android:layout_marginEnd="16dp"
+        app:srcCompat="@drawable/ic_ai" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fbStartStop"

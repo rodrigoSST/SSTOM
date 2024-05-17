@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'com.android.application'
-apply plugin: 'com.google.gms.google-services'
+//apply plugin: 'com.google.gms.google-services'
 
 android {
     compileSdkVersion Integer.parseInt(project.ANDROID_COMPILE_SDK_VERSION)
@@ -145,9 +145,9 @@ dependencies {
     implementation deps.srtDroid
     implementation deps.exoplayer
     implementation deps.antmedia
-    implementation platform('com.google.firebase:firebase-bom:33.0.0')
+    /*implementation platform('com.google.firebase:firebase-bom:33.0.0')
     implementation deps.analytics
-    implementation deps.crashlytics
+    implementation deps.crashlytics*/
     kapt deps.glidecompiler
 
 }

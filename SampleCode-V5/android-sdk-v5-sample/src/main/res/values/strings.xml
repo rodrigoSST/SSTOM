@@ -481,4 +481,5 @@ More refer to the release notes." </string>
     <string name="connection_failed">Connection failed: %s</string>
     <string name="an_error_occurred">An error occurred: %s</string>
     <string name="starting_streamer">Start streaming...</string>
+    <string name="drone">Drone</string>
 </resources>
