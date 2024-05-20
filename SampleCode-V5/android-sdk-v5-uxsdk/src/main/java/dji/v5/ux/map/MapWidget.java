@@ -59,7 +59,6 @@ import dji.v5.ux.core.util.MathUtil;
 import dji.v5.ux.core.util.RxUtil;
 import dji.v5.ux.core.util.SettingDefinitions;
 import dji.v5.ux.core.util.ViewUtil;
-import dji.v5.ux.mapkit.amap.provider.AMapProvider;
 import dji.v5.ux.mapkit.core.Mapkit;
 import dji.v5.ux.mapkit.core.camera.DJICameraUpdate;
 import dji.v5.ux.mapkit.core.camera.DJICameraUpdateFactory;
@@ -868,13 +867,13 @@ public class MapWidget extends ConstraintLayoutWidget<Object> implements View.On
      *                 initializing.
      */
     public void initAMap(@Nullable final OnMapReadyListener listener) {
-        mapView = new AMapProvider().dispatchMapViewRequest(getContext(), null);
+        /*mapView = new AMapProvider().dispatchMapViewRequest(getContext(), null);
         addView((ViewGroup) mapView, 0);
         mapView.getDJIMapAsync(map -> {
             MapWidget.this.map = map;
             postInit(listener);
             flyZoneHelper.initializeMap(map);
-        });
+        });*/
     }
 
     /**

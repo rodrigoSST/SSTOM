@@ -2,7 +2,6 @@ package dji.sampleV5.aircraft.views
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.location.Location
 import android.media.MediaFormat
 import android.os.Bundle
 import android.os.Handler
@@ -18,7 +17,6 @@ import androidx.annotation.RequiresPermission
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
-import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -288,38 +286,34 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             .setAudioCallEnabled(false)
             .build()
 
-        //initMapView()
+        initMapView()
 
     }
 
     private fun initMapView() {
-        /*mapFragment =
+        mapFragment =
             (childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?)!!
 
-        mapFragment.getMapAsync(this@LiveStreamingFragment)*/
+        mapFragment.getMapAsync(this@LiveStreamingFragment)
     }
 
-    override fun onMapReady(googleMap: GoogleMap?) {
+    override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
         getKnownLocation()
     }
 
     private fun getKnownLocation() {
-        val location = liveStreamVM.getAircraftLocation()
-        location?.let {
-            map?.addMarker(
-                MarkerOptions().position(
-                    LatLng(it.latitude, it.longitude)
-                ).title(getString(R.string.drone))
-            )
+        val location = LatLng(
+            liveStreamVM.getAircraftLocation()?.latitude ?: 0.0,
+            liveStreamVM.getAircraftLocation()?.longitude ?: 0.0
+        )
 
-            map?.moveCamera(
-                CameraUpdateFactory.newLatLngZoom(
-                    LatLng(location.latitude, location.longitude),
-                    2F
-                )
-            )
-        }
+        map?.addMarker(
+            MarkerOptions().position(location).title(getString(R.string.drone))
+        )
+        map?.moveCamera(
+            CameraUpdateFactory.newLatLngZoom(location, 2F)
+        )
     }
 
     private fun createWebRTCListener(): IWebRTCListener {
@@ -401,6 +395,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
     private fun initListener() {
         binding.fbStartStop.setOnClickListener(this)
+        binding.fbAi.setOnClickListener(this)
 
         secondaryFPVWidget.setOnClickListener { v: View? -> swapVideoSource() }
         initChannelStateListener()
@@ -668,11 +663,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             }
 
             R.id.fbAi -> {
-                if (!isStreaming) {
-                    playerStream()
-                } else {
-                    stopSrtStreaming()
-                }
+                playerStream()
             }
         }
     }
@@ -764,6 +755,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
     companion object {
         const val EXTRA_ID_DEVICE = "EXTRA_ID_DEVICE"
-        const val WEBRTC_HOST = "wss://ec2-3-88-125-209.compute-1.amazonaws.com:5443/WebRTCAppEE/websocket"
+        const val WEBRTC_HOST =
+            "wss://ec2-3-88-125-209.compute-1.amazonaws.com:5443/WebRTCAppEE/websocket"
     }
 }

@@ -35,9 +35,7 @@
         android:maxSdkVersion="32" />
 
     <!-- Google Maps -->
-    <meta-data
-        android:name="com.google.android.geo.API_KEY"
-        android:value="AIzaSyArhpu82nJ-vrxXGoOxzTZ-ZspazjBg7Qg" />
+
 
     <!-- AMaps -->
     <meta-data
@@ -63,9 +61,15 @@
         android:requestLegacyExternalStorage="true"
         android:theme="@style/Theme.SSTDeviceStream">
 
+        <uses-library android:name="org.apache.http.legacy" android:required="false" />
+
         <meta-data
             android:name="com.dji.sdk.API_KEY"
             android:value="${API_KEY}"/>
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${GMAP_API_KEY}" />
 
         <activity
             android:name="dji.sampleV5.aircraft.MainActivity"
