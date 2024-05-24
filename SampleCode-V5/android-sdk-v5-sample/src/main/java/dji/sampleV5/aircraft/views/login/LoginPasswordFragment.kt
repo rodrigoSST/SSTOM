@@ -9,7 +9,10 @@ import android.view.inputmethod.InputMethodManager
 import androidx.core.view.isVisible
 import androidx.navigation.fragment.findNavController
 import com.sst.data.model.request.LoginRequest
+import dji.sampleV5.aircraft.MainActivity
 import dji.sampleV5.aircraft.R
+import dji.sampleV5.aircraft.comom.SHARED_PREFS
+import dji.sampleV5.aircraft.comom.extensions.hideKeyboard
 import dji.sampleV5.aircraft.comom.extensions.pop
 import dji.sampleV5.aircraft.comom.extensions.safeLet
 import dji.sampleV5.aircraft.data.MSDKInfo
@@ -90,6 +93,8 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
     }
 
     private fun doLogin() {
+        binding.etField.hideKeyboard(requireContext())
+
         if (binding.etField.text.isNullOrEmpty()) {
             binding.tiField.error = getString(R.string.fill_the_field)
         } else {
@@ -106,14 +111,16 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
         }
     }
 
-    private fun getDeviceName(): String =
-        MSDKInfo(MSDKInfoModel().getSDKVersion()).productType.name
+    private fun getDeviceName(): String {
+        val sharedPreferences = activity?.getSharedPreferences(SHARED_PREFS, Context.MODE_PRIVATE)
+        return sharedPreferences?.getString(MainActivity.PREFS_DEVICE_NAME, "") ?: ""
+    }
 
     private fun getDeviceId() =
         SDKConfig.getInstance().deviceId
 
     private fun savePrefs(userId: String, deviceId: String) {
-        val sharedPreferences = activity?.getPreferences(Context.MODE_PRIVATE)
+        val sharedPreferences = activity?.getSharedPreferences(SHARED_PREFS, Context.MODE_PRIVATE)
         val prefEdit = sharedPreferences?.edit()
         prefEdit?.putString(PREFS_USER_ID, userId)
         prefEdit?.putString(PREFS_DEVICE_ID, deviceId)

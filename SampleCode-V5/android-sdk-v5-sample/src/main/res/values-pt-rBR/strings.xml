@@ -476,5 +476,8 @@ Mais informações consulte as notas de lançamento."</string>
     <string name="an_error_occurred">Ocorreu um erro: %s</string>
     <string name="starting_streamer">Iniciando streaming…</string>
     <string name="drone">Drone</string>
-
+    <string name="disconnected">Desconectado</string>
+    <string name="no_stream_to_play">Sem streaming para visualizar</string>
+    <string name="not_connected_yet">Não conectado com o drone ainda</string>
+    <string name="ai">IA</string>
 </resources>

@@ -2,6 +2,7 @@ package dji.sampleV5.aircraft
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -14,11 +15,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
+import dji.sampleV5.aircraft.comom.SHARED_PREFS
 import dji.sampleV5.aircraft.databinding.ActivityMainDefaultBinding
 import dji.sampleV5.aircraft.models.MSDKInfoVm
 import dji.sampleV5.aircraft.models.MSDKManagerVM
 import dji.sampleV5.aircraft.models.globalViewModels
 import dji.sampleV5.aircraft.util.ToastUtils
+import dji.sampleV5.aircraft.views.login.LoginPasswordFragment
 import dji.v5.common.utils.GeoidManager
 import dji.v5.utils.common.LogUtils
 import dji.v5.utils.common.PermissionUtil
@@ -29,6 +33,8 @@ import dji.v5.ux.core.util.UxSharedPreferencesUtil
 import dji.v5.ux.sample.showcase.defaultlayout.DefaultLayoutActivity
 import dji.v5.ux.sample.showcase.widgetlist.WidgetsActivity
 import io.reactivex.rxjava3.disposables.CompositeDisposable
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -80,8 +86,18 @@ class MainActivity : AppCompatActivity() {
         binding.videoView.start()
 
         binding.videoView.setOnCompletionListener {
-            Intent(this, LoginActivity::class.java).also {
-                startActivity(it)
+            lifecycleScope.launch {
+                var count = 0
+                while (count < 10) {
+                    count++
+                    if (msdkInfoVm.msdkInfo.value?.productType?.name != "UNKNOWN") {
+                        savePrefs(msdkInfoVm.msdkInfo.value?.productType?.name ?: "")
+                        startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+                    } else {
+                        showToast(getString(R.string.not_connected_yet))
+                    }
+                    delay(1000)
+                }
             }
         }
 
@@ -139,12 +155,18 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun initMSDKInfoView() {
-        msdkInfoVm.msdkInfo.observe(this) {
-            binding.imgDevice.setImageResource(setImageDevice(it.productType.name))
+        msdkInfoVm.msdkInfo.observe(this) { msdkInfo ->
+            /*if (msdkInfo.productType.name != "UNKNOWN") {
+                savePrefs(msdkInfo.productType.name)
+                startActivity(Intent(this, LoginActivity::class.java))
+            } else {
+                showToast(getString(R.string.not_connected_yet))
+            }*/
+            /*binding.imgDevice.setImageResource(setImageDevice(it.productType.name))
             binding.txtInfo.text =
                         "${StringUtils.getResStr(R.string.model, it.productType.name)}\n" +
                         "${StringUtils.getResStr(R.string.package_product_category, it.packageProductCategory)}\n" +
-                        it.coreInfo.toString()
+                        it.coreInfo.toString()*/
         }
 
         binding.btnWidgetList.isEnabled = false
@@ -171,6 +193,13 @@ class MainActivity : AppCompatActivity() {
                 startActivity(it)
             }
         }
+    }
+
+    private fun savePrefs(deviceName: String) {
+        val sharedPreferences = getSharedPreferences(SHARED_PREFS, Context.MODE_PRIVATE)
+        val prefEdit = sharedPreferences?.edit()
+        prefEdit?.putString(PREFS_DEVICE_NAME, deviceName)
+        prefEdit?.apply()
     }
 
     private fun observeSDKManager() {
@@ -263,5 +292,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val TAG = "MainActivityLog"
+        const val PREFS_DEVICE_NAME = "PREFS_DEVICE_NAME"
     }
 }

@@ -71,6 +71,10 @@ class LiveStreamVM(
 
     private val _loading = MutableLiveData<Boolean>(false)
     val loading: LiveData<Boolean> = _loading
+
+    private val _disconnected = MutableLiveData<Boolean>()
+    val disconnected: LiveData<Boolean> = _disconnected
+
     init {
         liveStreamStatusListener = object : LiveStreamStatusListener {
             override fun onLiveStreamStatusUpdate(status: LiveStreamStatus?) {
@@ -109,7 +113,13 @@ class LiveStreamVM(
 
     fun disconnectDevice(idDevice: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            streamRepository.disconnectDevice(idDevice)
+            try {
+                streamRepository.disconnectDevice(idDevice)
+                _disconnected.postValue(true)
+            } catch (e: Exception) {
+                _error.postValue(e.message)
+                _disconnected.postValue(true)
+            }
         }
     }
 

@@ -23,6 +23,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.sst.data.model.request.StartStream
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
@@ -186,6 +187,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         override fun onSuccess() {
             toast(getString(R.string.connected))
             activity?.runOnUiThread {
+                binding.aiButton.isVisible = true
                 binding.fbStartStop.setImageResource(R.drawable.ic_stop)
                 isStreaming = true
             }
@@ -268,11 +270,11 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         secondaryFPVWidget.setSurfaceViewZOrderOnTop(true)
         secondaryFPVWidget.setSurfaceViewZOrderMediaOverlay(true)
 
-        mapWidget.initAMap { map: DJIMap ->
+        /*mapWidget.initAMap { map: DJIMap ->
             // map.setOnMapClickListener(latLng -> onViewClick(mapWidget))
             val uiSetting = map.uiSettings
             uiSetting?.setZoomControlsEnabled(false)
-        }
+        }*/
         mapWidget.onCreate(savedInstanceState)
 
         initListener()
@@ -280,13 +282,15 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
         webRTCClient = IWebRTCClient.builder()
             .setActivity(activity)
+            .setAudioCallEnabled(false)
+            .setVideoCallEnabled(false)
             .addRemoteVideoRenderer(binding.playerView)
             .setWebRTCListener(createWebRTCListener())
             .setServerUrl(WEBRTC_HOST)
-            .setAudioCallEnabled(false)
+            .setReconnectionEnabled(true)
             .build()
 
-        initMapView()
+        //initMapView()
 
     }
 
@@ -320,13 +324,34 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         return object : DefaultWebRTCListener() {
             override fun onPlayStarted(streamId: String) {
                 super.onPlayStarted(streamId)
-                val i = streamId
+                try {
+                    binding.loadingAi.isVisible = false
+                } catch (e: Exception) {
+                    e.stackTrace
+                }
             }
 
             override fun onPlayFinished(streamId: String) {
                 super.onPlayFinished(streamId)
             }
+
+            override fun onError(description: String?, streamId: String?) {
+                super.onError(description, streamId)
+                try {
+                    description?.let { handleError(it, binding.loadingAi) }
+                } catch (e: Exception){
+                    e.stackTrace
+                }
+            }
         }
+    }
+
+    private fun handleError(error: String, loading: CircularProgressIndicator) {
+        loading.isVisible = false
+        if (error == "no_stream_exist")
+            binding.txtMessage.text = getString(R.string.no_stream_to_play)
+        else
+            binding.txtMessage.text = error
     }
 
     private fun toast(message: String) {
@@ -395,7 +420,9 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
     private fun initListener() {
         binding.fbStartStop.setOnClickListener(this)
-        binding.fbAi.setOnClickListener(this)
+        binding.aiButton.setOnCheckedChangeListener { _, isChecked ->
+            playerStream()
+        }
 
         secondaryFPVWidget.setOnClickListener { v: View? -> swapVideoSource() }
         initChannelStateListener()
@@ -450,6 +477,11 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                     }
                 }
             }
+        }
+
+        liveStreamVM.disconnected.observe(viewLifecycleOwner) {
+            toast(getString(R.string.disconnected))
+            binding.contentLoading.isVisible = false
         }
     }
 
@@ -661,10 +693,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                     stopSrtStreaming()
                 }
             }
-
-            R.id.fbAi -> {
-                playerStream()
-            }
         }
     }
 
@@ -695,22 +723,14 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     }
 
     private fun playerStream() {
-        val handler = Handler(Looper.getMainLooper())
-
-        val runnable = object : Runnable {
-            override fun run() {
-                try {
-                    webRTCClient.play(streamId)
-                } catch (e: Exception) {
-                    handler.postDelayed(this, 3000)
-                }
-            }
-        }
-
-        handler.post(runnable)
+        binding.playerView.isVisible = true
+        binding.loadingAi.isVisible = true
+        webRTCClient.play(streamId)
     }
 
     private fun stopPlayer() {
+        binding.playerView.isVisible = false
+        binding.loadingAi.isVisible = false
         webRTCClient.stop(streamId)
     }
 

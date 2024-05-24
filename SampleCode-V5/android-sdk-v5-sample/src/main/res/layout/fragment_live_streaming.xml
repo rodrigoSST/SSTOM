@@ -249,6 +249,7 @@
             android:layout_height="@dimen/uxsdk_100_dp"
             android:layout_marginEnd="12dp"
             android:layout_marginBottom="12dp"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:uxsdk_djiMap_mapType="normal" />
@@ -260,6 +261,7 @@
             android:layout_height="@dimen/uxsdk_100_dp"
             android:layout_marginEnd="12dp"
             android:layout_marginBottom="12dp"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
@@ -297,8 +299,29 @@
             android:layout_height="100dp"
             android:layout_margin="16dp"
             android:elevation="100dp"
+            app:layout_constraintDimensionRatio="16:9"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/loadingAi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            app:layout_constraintBottom_toBottomOf="@+id/playerView"
+            app:layout_constraintEnd_toEndOf="@+id/playerView"
+            app:layout_constraintStart_toStartOf="@+id/playerView"
+            app:layout_constraintTop_toTopOf="@+id/playerView" />
+
+        <TextView
+            android:id="@+id/txtMessage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            app:layout_constraintBottom_toBottomOf="@id/playerView"
+            app:layout_constraintEnd_toEndOf="@id/playerView"
+            app:layout_constraintStart_toStartOf="@id/playerView"
+            app:layout_constraintTop_toTopOf="@id/playerView" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/contentLoading"
@@ -341,14 +364,19 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <ImageView
-        android:id="@+id/fbAi"
-        android:layout_width="42dp"
-        android:layout_height="42dp"
-        android:layout_gravity="bottom|right"
+    <ToggleButton
+        android:id="@+id/aiButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:visibility="gone"
         android:layout_marginBottom="80dp"
         android:layout_marginEnd="16dp"
-        app:srcCompat="@drawable/ic_ai" />
+        android:layout_gravity="bottom|end"
+        android:background="@drawable/ic_ai_button"
+        android:textColor="@color/white"
+        android:textOff="@string/ai"
+        android:textOn="@string/ai"
+        android:textSize="18sp"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fbStartStop"

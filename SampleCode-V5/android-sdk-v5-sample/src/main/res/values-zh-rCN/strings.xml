@@ -480,5 +480,6 @@
     <string name="connected">Connected</string>
     <string name="connection_lost">Connection lost: %s</string>
     <string name="an_error_occurred">An error occurred: %s</string>
+    <string name="disconnected">Disconnected</string>
     <string name="drone">Drone</string>
 </resources>
