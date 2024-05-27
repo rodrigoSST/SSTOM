@@ -15,10 +15,8 @@ import dji.sampleV5.aircraft.comom.SHARED_PREFS
 import dji.sampleV5.aircraft.comom.extensions.hideKeyboard
 import dji.sampleV5.aircraft.comom.extensions.pop
 import dji.sampleV5.aircraft.comom.extensions.safeLet
-import dji.sampleV5.aircraft.data.MSDKInfo
 import dji.sampleV5.aircraft.databinding.FragmentLoginBinding
 import dji.sampleV5.aircraft.enums.DeviceType
-import dji.sampleV5.aircraft.models.MSDKInfoModel
 import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.EXTRA_ID_DEVICE
 import dji.sampleV5.aircraft.views.base.BaseActivityContract
 import dji.sampleV5.aircraft.views.base.BaseFragment

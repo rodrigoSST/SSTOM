@@ -248,7 +248,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         horizontalSituationIndicatorWidget =
             view.findViewById<HorizontalSituationIndicatorWidget>(R.id.widget_horizontal_situation_indicator)
 
-        mapWidget = view.findViewById<MapWidget>(dji.v5.ux.R.id.widget_map)
+        //mapWidget = view.findViewById<MapWidget>(dji.v5.ux.R.id.widget_map)
         cameraControlsWidget.exposureSettingsIndicatorWidget
             .setStateChangeResourceId(dji.v5.ux.R.id.panel_camera_controls_exposure_settings)
 
@@ -275,7 +275,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             val uiSetting = map.uiSettings
             uiSetting?.setZoomControlsEnabled(false)
         }*/
-        mapWidget.onCreate(savedInstanceState)
+        //mapWidget.onCreate(savedInstanceState)
 
         initListener()
         setupObservers()
@@ -290,7 +290,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             .setReconnectionEnabled(true)
             .build()
 
-        //initMapView()
+        initMapView()
 
     }
 
@@ -366,7 +366,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
         inflateStreamer()
 
-        mapWidget.onResume()
+        //mapWidget.onResume()
         compositeDisposable = CompositeDisposable()
         compositeDisposable?.add(systemStatusListPanelWidget.closeButtonPressed()
             .observeOn(AndroidSchedulers.mainThread())

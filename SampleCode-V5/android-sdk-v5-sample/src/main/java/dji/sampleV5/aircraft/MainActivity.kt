@@ -86,19 +86,22 @@ class MainActivity : AppCompatActivity() {
         binding.videoView.start()
 
         binding.videoView.setOnCompletionListener {
-            lifecycleScope.launch {
+            startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+            finish()
+            /*lifecycleScope.launch {
                 var count = 0
                 while (count < 10) {
                     count++
                     if (msdkInfoVm.msdkInfo.value?.productType?.name != "UNKNOWN") {
                         savePrefs(msdkInfoVm.msdkInfo.value?.productType?.name ?: "")
                         startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+                        finish()
                     } else {
                         showToast(getString(R.string.not_connected_yet))
                     }
-                    delay(1000)
+                    delay(2000)
                 }
-            }
+            }*/
         }
 
         if (!isTaskRoot && intent.hasCategory(Intent.CATEGORY_LAUNCHER) && Intent.ACTION_MAIN == intent.action) {

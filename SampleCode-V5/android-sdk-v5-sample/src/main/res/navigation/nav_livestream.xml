@@ -30,7 +30,9 @@
             app:enterAnim="@anim/slide_in"
             app:exitAnim="@anim/slide_out"
             app:popEnterAnim="@anim/slide_in_pop"
-            app:popExitAnim="@anim/slide_out_pop"/>
+            app:popExitAnim="@anim/slide_out_pop"
+            app:popUpTo="@id/navigation_livestreaming"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment
