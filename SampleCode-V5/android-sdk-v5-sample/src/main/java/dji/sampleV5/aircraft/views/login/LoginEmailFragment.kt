@@ -1,11 +1,15 @@
 package dji.sampleV5.aircraft.views.login
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import androidx.navigation.fragment.findNavController
 import dji.sampleV5.aircraft.views.base.BaseViewModel
 import dji.sampleV5.aircraft.R
+import dji.sampleV5.aircraft.comom.SHARED_PREFS
+import dji.sampleV5.aircraft.comom.extensions.hideKeyboard
 import dji.sampleV5.aircraft.comom.extensions.pop
 import dji.sampleV5.aircraft.databinding.FragmentLoginBinding
 import dji.sampleV5.aircraft.views.base.BaseActivityContract
@@ -17,10 +21,15 @@ class LoginEmailFragment : BaseFragment<FragmentLoginBinding, BaseViewModel>(
 ) {
 
     override val viewModel: BaseViewModel by viewModel()
+    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         (activity as? BaseActivityContract)?.onChangeBottomNavigationVisibility(false)
+
+        activity?.getSharedPreferences(SHARED_PREFS, Context.MODE_PRIVATE)?.let {
+            sharedPreferences = it
+        }
 
         setupViews()
     }
@@ -31,6 +40,11 @@ class LoginEmailFragment : BaseFragment<FragmentLoginBinding, BaseViewModel>(
     }
 
     private fun setupViews() {
+        if (rememberActivated()) {
+            binding.etField.setText(getEmailPrefs())
+            binding.cbRemember.isChecked = true
+        }
+
         binding.imgClose.setOnClickListener {
             pop()
         }
@@ -51,9 +65,13 @@ class LoginEmailFragment : BaseFragment<FragmentLoginBinding, BaseViewModel>(
     }
 
     private fun next() {
+        binding.etField.hideKeyboard(requireContext())
+
         if (binding.etField.text.isNullOrEmpty()) {
             binding.tiField.error = getString(R.string.fill_the_field)
         } else {
+            savePrefs(binding.etField.text.toString(), binding.cbRemember.isChecked)
+
             findNavController().navigate(
                 R.id.action_navigation_login_email_to_navigation_login_password,
                 Bundle().apply {
@@ -64,6 +82,24 @@ class LoginEmailFragment : BaseFragment<FragmentLoginBinding, BaseViewModel>(
                 }
             )
         }
+    }
+
+    private fun rememberActivated() =  sharedPreferences.getBoolean(PREFS_REMEMBER_ME, false)
+
+    private fun getEmailPrefs(): String {
+        return sharedPreferences.getString(LoginPasswordFragment.PREFS_USER_EMAIL, "") ?: ""
+    }
+
+    private fun savePrefs(email: String, remember: Boolean) {
+        val sharedPreferences = activity?.getSharedPreferences(SHARED_PREFS, Context.MODE_PRIVATE)
+        val prefEdit = sharedPreferences?.edit()
+        prefEdit?.putString(LoginPasswordFragment.PREFS_USER_EMAIL, email)
+        prefEdit?.putBoolean(PREFS_REMEMBER_ME, remember)
+        prefEdit?.apply()
+    }
+
+    companion object {
+        const val PREFS_REMEMBER_ME = "PREFS_REMEMBER_ME"
     }
 
 }

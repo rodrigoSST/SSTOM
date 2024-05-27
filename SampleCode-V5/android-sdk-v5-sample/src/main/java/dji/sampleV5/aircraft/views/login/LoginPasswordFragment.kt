@@ -47,6 +47,8 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
     }
 
     private fun setupViews() {
+        binding.cbRemember.isVisible = false
+
         binding.imgClose.setOnClickListener {
             pop()
         }
@@ -69,7 +71,6 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
 
     private fun setupObservers() {
         viewModel.login.observe(viewLifecycleOwner) {
-            hideKeyboard(binding.etField)
             savePrefs(it.userData.idUser, it.device.idDevice)
             if (it != null) {
                 findNavController().navigate(
@@ -134,5 +135,6 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
         const val EXTRA_EMAIL = "EXTRA_EMAIL"
         const val PREFS_USER_ID = "PREFS_USER_ID"
         const val PREFS_DEVICE_ID = "PREFS_DEVICE_ID"
+        const val PREFS_USER_EMAIL = "PREFS_USER_EMAIL"
     }
 }

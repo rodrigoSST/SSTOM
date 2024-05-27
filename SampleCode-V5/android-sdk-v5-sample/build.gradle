@@ -145,6 +145,7 @@ dependencies {
     implementation deps.srtDroid
     implementation deps.exoplayer
     implementation deps.antmedia
+    implementation deps.playservicesmaps
     /*implementation platform('com.google.firebase:firebase-bom:33.0.0')
     implementation deps.analytics
     implementation deps.crashlytics*/
