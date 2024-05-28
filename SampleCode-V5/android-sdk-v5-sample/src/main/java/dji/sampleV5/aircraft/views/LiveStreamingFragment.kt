@@ -421,7 +421,10 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private fun initListener() {
         binding.fbStartStop.setOnClickListener(this)
         binding.aiButton.setOnCheckedChangeListener { _, isChecked ->
-            playerStream()
+            if(isChecked)
+                playerStream()
+            else
+                stopPlayer()
         }
 
         secondaryFPVWidget.setOnClickListener { v: View? -> swapVideoSource() }
@@ -467,7 +470,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                             binding.contentLoading.isVisible = false
                             isStreaming = true
                             streamer.startStream(it.urlTransmit)
-                            //playerStream()
                         } catch (e: Exception) {
                             e.printStackTrace()
                             binding.contentLoading.isVisible = false
