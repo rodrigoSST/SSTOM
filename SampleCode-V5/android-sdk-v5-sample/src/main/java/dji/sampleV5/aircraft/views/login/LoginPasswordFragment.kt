@@ -126,11 +126,6 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
         prefEdit?.apply()
     }
 
-    private fun hideKeyboard(editText: View) {
-        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(editText.windowToken, 0)
-    }
-
     companion object {
         const val EXTRA_EMAIL = "EXTRA_EMAIL"
         const val PREFS_USER_ID = "PREFS_USER_ID"
