@@ -250,13 +250,13 @@
             android:layout_marginEnd="12dp"
             android:layout_marginBottom="12dp"
             android:visibility="gone"
+            app:uxsdk_mapBoxToken="pk.eyJ1Ijoicm9kcmlnb3NzdCIsImEiOiJjbHd6Y2k3eDkwNjQ4MmpxM3M5b2d5cWR0In0.JyvL06SxK6PEphFMh6g5zw"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:uxsdk_djiMap_mapType="normal" />
 
-        <fragment
+        <com.mapbox.mapboxsdk.maps.MapView
             android:id="@+id/map"
-            android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="@dimen/uxsdk_150_dp"
             android:layout_height="@dimen/uxsdk_100_dp"
             android:layout_marginEnd="12dp"

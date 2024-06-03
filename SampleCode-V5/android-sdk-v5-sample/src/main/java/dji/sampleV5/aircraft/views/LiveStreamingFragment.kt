@@ -4,8 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.media.MediaFormat
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Size
 import android.view.LayoutInflater
 import android.view.SurfaceHolder
@@ -18,11 +16,6 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.sst.data.model.request.StartStream
 import dji.sampleV5.aircraft.R
@@ -91,8 +84,7 @@ import kotlin.concurrent.thread
  * CreateDate : 2022/3/23 10:58 上午
  * Copyright : ©2022 DJI All Rights Reserved.
  */
-class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder.Callback,
-    OnMapReadyCallback {
+class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder.Callback {
 
     private var _binding: FragmentLiveStreamingBinding? = null
     private val binding
@@ -134,9 +126,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private lateinit var topBarPanel: TopBarPanelWidget
     private lateinit var fpvParentView: ConstraintLayout
     private lateinit var surfaceView: SurfaceView
-
-    private var map: GoogleMap? = null
-    private lateinit var mapFragment: SupportMapFragment
 
     private val idDevice by lazy {
         arguments?.getString(EXTRA_ID_DEVICE)
@@ -248,7 +237,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         horizontalSituationIndicatorWidget =
             view.findViewById<HorizontalSituationIndicatorWidget>(R.id.widget_horizontal_situation_indicator)
 
-        //mapWidget = view.findViewById<MapWidget>(dji.v5.ux.R.id.widget_map)
+        mapWidget = view.findViewById<MapWidget>(dji.v5.ux.R.id.widget_map)
         cameraControlsWidget.exposureSettingsIndicatorWidget
             .setStateChangeResourceId(dji.v5.ux.R.id.panel_camera_controls_exposure_settings)
 
@@ -270,12 +259,12 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         secondaryFPVWidget.setSurfaceViewZOrderOnTop(true)
         secondaryFPVWidget.setSurfaceViewZOrderMediaOverlay(true)
 
-        /*mapWidget.initAMap { map: DJIMap ->
+        mapWidget.initAMap { map: DJIMap ->
             // map.setOnMapClickListener(latLng -> onViewClick(mapWidget))
             val uiSetting = map.uiSettings
             uiSetting?.setZoomControlsEnabled(false)
-        }*/
-        //mapWidget.onCreate(savedInstanceState)
+        }
+        mapWidget.onCreate(savedInstanceState)
 
         initListener()
         setupObservers()
@@ -289,35 +278,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             .setServerUrl(WEBRTC_HOST)
             .setReconnectionEnabled(true)
             .build()
-
-        initMapView()
-
-    }
-
-    private fun initMapView() {
-        mapFragment =
-            (childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?)!!
-
-        mapFragment.getMapAsync(this@LiveStreamingFragment)
-    }
-
-    override fun onMapReady(googleMap: GoogleMap) {
-        map = googleMap
-        getKnownLocation()
-    }
-
-    private fun getKnownLocation() {
-        val location = LatLng(
-            liveStreamVM.getAircraftLocation()?.latitude ?: 0.0,
-            liveStreamVM.getAircraftLocation()?.longitude ?: 0.0
-        )
-
-        map?.addMarker(
-            MarkerOptions().position(location).title(getString(R.string.drone))
-        )
-        map?.moveCamera(
-            CameraUpdateFactory.newLatLngZoom(location, 2F)
-        )
     }
 
     private fun createWebRTCListener(): IWebRTCListener {
@@ -366,7 +326,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
         inflateStreamer()
 
-        //mapWidget.onResume()
+        mapWidget.onResume()
         compositeDisposable = CompositeDisposable()
         compositeDisposable?.add(systemStatusListPanelWidget.closeButtonPressed()
             .observeOn(AndroidSchedulers.mainThread())
