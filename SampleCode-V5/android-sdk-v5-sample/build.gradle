@@ -12,8 +12,8 @@ android {
         applicationId "com.sst.sstplay.smdev5"
         minSdkVersion Integer.parseInt(project.ANDROID_MIN_SDK_VERSION)
         targetSdkVersion Integer.parseInt(project.ANDROID_TARGET_SDK_VERSION)
-        versionCode 9
-        versionName "0.0.9"
+        versionCode 10
+        versionName "0.0.10"
         manifestPlaceholders["API_KEY"] = project.AIRCRAFT_API_KEY
         manifestPlaceholders["AMAP_API_KEY"] = project.AMAP_API_KEY
         manifestPlaceholders["GMAP_API_KEY"] = project.GMAP_API_KEY
@@ -131,10 +131,6 @@ dependencies {
     implementation deps.expandedit
     implementation deps.rx3Kt
     implementation deps.dom
-    implementation deps.rabbitmq
-    implementation deps.tensorFlow
-    implementation deps.tensorFlowGpuDelegate
-    implementation deps.tensorFlowGpu
     implementation deps.retrofit
     implementation deps.retrofitGson
     implementation deps.retrofitInterceptor
@@ -145,10 +141,6 @@ dependencies {
     implementation deps.srtDroid
     implementation deps.exoplayer
     implementation deps.antmedia
-    implementation deps.playservicesmaps
-    /*implementation platform('com.google.firebase:firebase-bom:33.0.0')
-    implementation deps.analytics
-    implementation deps.crashlytics*/
     kapt deps.glidecompiler
 
 }

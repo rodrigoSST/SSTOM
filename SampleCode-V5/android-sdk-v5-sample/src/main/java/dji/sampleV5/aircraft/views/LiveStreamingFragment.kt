@@ -1,6 +1,7 @@
 package dji.sampleV5.aircraft.views
 
 import android.Manifest
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.media.MediaFormat
 import android.os.Bundle
@@ -13,9 +14,10 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.RequiresPermission
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.sst.data.model.request.StartStream
 import dji.sampleV5.aircraft.R
@@ -43,13 +45,20 @@ import dji.v5.ux.cameracore.widget.focusexposureswitch.FocusExposureSwitchWidget
 import dji.v5.ux.cameracore.widget.focusmode.FocusModeWidget
 import dji.v5.ux.cameracore.widget.fpvinteraction.FPVInteractionWidget
 import dji.v5.ux.core.base.SchedulerProvider.io
+import dji.v5.ux.core.base.SchedulerProvider.ui
+import dji.v5.ux.core.communication.BroadcastValues
+import dji.v5.ux.core.communication.GlobalPreferenceKeys
+import dji.v5.ux.core.communication.ObservableInMemoryKeyedStore
+import dji.v5.ux.core.communication.UXKeys
 import dji.v5.ux.core.extension.hide
+import dji.v5.ux.core.extension.show
 import dji.v5.ux.core.extension.toggleVisibility
 import dji.v5.ux.core.panel.systemstatus.SystemStatusListPanelWidget
 import dji.v5.ux.core.panel.topbar.TopBarPanelWidget
 import dji.v5.ux.core.util.CameraUtil
 import dji.v5.ux.core.util.CommonUtils
 import dji.v5.ux.core.util.DataProcessor
+import dji.v5.ux.core.util.ViewUtil
 import dji.v5.ux.core.widget.fpv.FPVStreamSourceListener
 import dji.v5.ux.core.widget.fpv.FPVWidget
 import dji.v5.ux.core.widget.hsi.HorizontalSituationIndicatorWidget
@@ -126,6 +135,10 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     private lateinit var topBarPanel: TopBarPanelWidget
     private lateinit var fpvParentView: ConstraintLayout
     private lateinit var surfaceView: SurfaceView
+    private lateinit var mDrawerLayout: DrawerLayout
+
+    private var originalWidth = 0
+    private var originalHeight = 0
 
     private val idDevice by lazy {
         arguments?.getString(EXTRA_ID_DEVICE)
@@ -150,6 +163,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         override fun onError(error: StreamPackError) {
             toast(String.format(getString(R.string.an_error_occurred), error))
             activity?.runOnUiThread {
+                binding.contentLoading.isVisible = false
                 binding.fbStartStop.setImageResource(R.drawable.ic_play)
                 isStreaming = false
             }
@@ -160,6 +174,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         override fun onFailed(message: String) {
             toast(String.format(getString(R.string.connection_failed), message))
             activity?.runOnUiThread {
+                binding.contentLoading.isVisible = false
                 binding.fbStartStop.setImageResource(R.drawable.ic_play)
                 isStreaming = false
             }
@@ -168,6 +183,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         override fun onLost(message: String) {
             toast(String.format(getString(R.string.connection_lost), message))
             activity?.runOnUiThread {
+                binding.contentLoading.isVisible = false
                 binding.fbStartStop.setImageResource(R.drawable.ic_play)
                 isStreaming = false
             }
@@ -240,6 +256,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         mapWidget = view.findViewById<MapWidget>(dji.v5.ux.R.id.widget_map)
         cameraControlsWidget.exposureSettingsIndicatorWidget
             .setStateChangeResourceId(dji.v5.ux.R.id.panel_camera_controls_exposure_settings)
+        mDrawerLayout = view.findViewById<DrawerLayout>(dji.v5.ux.R.id.root_view)
 
 
         MediaDataCenter.getInstance().videoStreamManager.addStreamSourcesListener { sources: List<StreamSource>? ->
@@ -260,7 +277,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         secondaryFPVWidget.setSurfaceViewZOrderMediaOverlay(true)
 
         mapWidget.initAMap { map: DJIMap ->
-            // map.setOnMapClickListener(latLng -> onViewClick(mapWidget))
+           // map.setOnMapClickListener(latLng -> onViewClick(mapWidget))
             val uiSetting = map.uiSettings
             uiSetting?.setZoomControlsEnabled(false)
         }
@@ -354,6 +371,18 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
                         Runnable { onCameraSourceUpdated(result.devicePosition, result.lensType) })
                 })
         )
+
+        compositeDisposable?.add(ObservableInMemoryKeyedStore.getInstance()
+            .addObserver(UXKeys.create(GlobalPreferenceKeys.GIMBAL_ADJUST_CLICKED))
+            .observeOn(ui())
+            .subscribe { broadcastValues: BroadcastValues? ->
+                if (broadcastValues != null) {
+                    this.isGimableAdjustClicked(
+                        broadcastValues
+                    )
+                }
+            })
+        ViewUtil.setKeepScreen(requireActivity(), true)
     }
 
     @RequiresPermission(allOf = [Manifest.permission.CAMERA])
@@ -367,6 +396,16 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
             mimeType = MediaFormat.MIMETYPE_VIDEO_HEVC, resolution = Size(1280, 720), fps = 20
         )
         streamer.configure(videoConfig)
+    }
+
+    private fun isGimableAdjustClicked(broadcastValues: BroadcastValues) {
+        if (mDrawerLayout.isDrawerOpen(GravityCompat.END)) {
+            mDrawerLayout.closeDrawers()
+        }
+        horizontalSituationIndicatorWidget.visibility = View.GONE
+        /*if (gimbalFineTuneWidget != null) {
+            gimbalFineTuneWidget.setVisibility(View.VISIBLE)
+        }*/
     }
 
     override fun onPause() {
@@ -388,6 +427,7 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
         }
 
         secondaryFPVWidget.setOnClickListener { v: View? -> swapVideoSource() }
+
         initChannelStateListener()
 
         val systemStatusWidget = topBarPanel.systemStatusWidget
@@ -395,6 +435,47 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
 
         val simulatorIndicatorWidget = topBarPanel.simulatorIndicatorWidget
         simulatorIndicatorWidget?.setOnClickListener { v: View? -> simulatorControlWidget.toggleVisibility() }
+
+        mapWidget.post {
+            originalWidth = mapWidget.width
+            originalHeight = mapWidget.height
+        }
+
+        binding.imgShowMap.setOnClickListener {
+            mapWidget.show()
+            binding.imgShowMap.hide()
+            mapWidget.post {
+                originalWidth = mapWidget.width
+                originalHeight = mapWidget.height
+            }
+        }
+
+        binding.imgMapMinimize.setOnClickListener {
+            mapWidget.hide()
+            binding.imgShowMap.show()
+        }
+
+        binding.imgMapFullscreen.setOnClickListener {
+            primaryFpvWidget.elevation = 50f
+            binding.imgShowPrimaryFpv.elevation = 50f
+
+            animateView(mapWidget, mapWidget.width, binding.contentMap.width, mapWidget.height, binding.contentMap.height)
+            animateView(primaryFpvWidget, primaryFpvWidget.width, originalWidth, primaryFpvWidget.height, originalHeight)
+
+            binding.fbStartStop.hide()
+            binding.imgMapMinimize.hide()
+            binding.imgShowMap.hide()
+        }
+
+        binding.imgShowPrimaryFpv.setOnClickListener {
+            primaryFpvWidget.elevation = 0f
+            animateView(mapWidget, mapWidget.width, originalWidth, mapWidget.height, originalHeight)
+            animateView(primaryFpvWidget, primaryFpvWidget.width, binding.fpvHolder.width, primaryFpvWidget.height, binding.fpvHolder.height)
+
+            binding.fbStartStop.show()
+            binding.imgMapMinimize.show()
+            binding.imgShowMap.show()
+        }
     }
 
     private fun setupObservers() {
@@ -619,11 +700,6 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     }
 
     private fun swapVideoSource() {
-        var restartStreaming = false
-        if (isStreaming) {
-            //stopStreamFrameByFrame()
-            restartStreaming = true
-        }
         val primaryVideoChannel = primaryFpvWidget.videoChannelType
         val primaryStreamSource = primaryFpvWidget.getStreamSource()
         val secondaryVideoChannel = secondaryFPVWidget.videoChannelType
@@ -710,6 +786,31 @@ class LiveStreamingFragment : DJIFragment(), View.OnClickListener, SurfaceHolder
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         videoDecoder?.onPause()
         streamer.stopPreview()
+    }
+
+    private fun animateView(view: View, startWidth: Int, endWidth: Int, startHeight: Int, endHeight: Int) {
+        val widthAnimator = ValueAnimator.ofInt(startWidth, endWidth)
+        val heightAnimator = ValueAnimator.ofInt(startHeight, endHeight)
+
+        widthAnimator.addUpdateListener { animation ->
+            val value = animation.animatedValue as Int
+            val layoutParams = view.layoutParams
+            layoutParams.width = value
+            view.layoutParams = layoutParams
+        }
+
+        heightAnimator.addUpdateListener { animation ->
+            val value = animation.animatedValue as Int
+            val layoutParams = view.layoutParams
+            layoutParams.height = value
+            view.layoutParams = layoutParams
+        }
+
+        widthAnimator.duration = 300
+        heightAnimator.duration = 300
+
+        widthAnimator.start()
+        heightAnimator.start()
     }
 
     override fun onDestroyView() {

@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_view"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/white">
+    android:layout_height="match_parent">
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/content"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -20,12 +21,10 @@
 
             <dji.v5.ux.core.widget.fpv.FPVWidget
                 android:id="@+id/widget_primary_fpv"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
                 app:uxsdk_cameraNameTextSize="14dp"
                 app:uxsdk_cameraSideTextSize="14dp"
                 app:uxsdk_videoChannelType="primaryStreamChannel">
@@ -37,6 +36,86 @@
                     tools:layout_editor_absoluteX="0dp"
                     tools:layout_editor_absoluteY="0dp" />
             </dji.v5.ux.core.widget.fpv.FPVWidget>
+
+            <ImageView
+                android:id="@+id/imgShowPrimaryFpv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@color/transparent_10_gray"
+                android:src="@drawable/ic_fullscreen"
+                app:layout_constraintStart_toStartOf="@id/widget_primary_fpv"
+                app:layout_constraintTop_toTopOf="@id/widget_primary_fpv"
+                app:tint="@color/icon_gray" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/contentMap"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginTop="42dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent">
+
+                <ImageView
+                    android:id="@+id/imgShowMap"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/bg_circle"
+                    android:backgroundTint="@color/main_blue"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_map"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent" />
+
+                <dji.v5.ux.map.MapWidget
+                    android:id="@+id/widget_map"
+                    android:layout_width="@dimen/uxsdk_150_dp"
+                    android:layout_height="@dimen/uxsdk_100_dp"
+                    android:visibility="gone"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:uxsdk_djiMap_mapType="normal"
+                    app:uxsdk_mapBoxToken="pk.eyJ1Ijoicm9kcmlnb3NzdCIsImEiOiJjbHd6Y2k3eDkwNjQ4MmpxM3M5b2d5cWR0In0.JyvL06SxK6PEphFMh6g5zw"
+                    app:uxsdk_mapProvider="MapBox" />
+
+                <ImageView
+                    android:id="@+id/imgMapFullscreen"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@color/transparent_10_gray"
+                    android:src="@drawable/ic_fullscreen"
+                    app:layout_constraintEnd_toEndOf="@id/widget_map"
+                    app:layout_constraintTop_toTopOf="@id/widget_map"
+                    app:tint="@color/icon_gray" />
+
+                <ImageView
+                    android:id="@+id/imgMapMinimize"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@color/transparent_10_gray"
+                    android:src="@drawable/ic_minimize"
+                    app:layout_constraintStart_toStartOf="@id/widget_map"
+                    app:layout_constraintTop_toTopOf="@id/widget_map"
+                    app:tint="@color/icon_gray" />
+
+                <ToggleButton
+                    android:id="@+id/aiButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_margin="12dp"
+                    android:background="@drawable/ic_ai_button"
+                    android:textColor="@color/white"
+                    android:textOff="@string/ai"
+                    android:textOn="@string/ai"
+                    android:textSize="18sp"
+                    android:visibility="gone"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/imgShowMap" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <dji.v5.ux.core.widget.fpv.FPVWidget
                 android:id="@+id/widget_secondary_fpv"
@@ -51,13 +130,9 @@
                 app:uxsdk_cameraNameTextSize="8dp"
                 app:uxsdk_cameraSideTextSize="8dp"
                 app:uxsdk_interactionEnabled="false"
+                android:elevation="100dp"
                 app:uxsdk_sourceCameraNameVisibility="true"
                 app:uxsdk_videoChannelType="secondaryStreamChannel" />
-
-            <dji.sampleV5.aircraft.utils.ai.OverlayView
-                android:id="@+id/overlay"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -151,7 +226,6 @@
             android:id="@+id/widget_camera_controls"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintDimensionRatio="@string/uxsdk_widget_camera_controls_ratio"
             app:layout_constraintEnd_toEndOf="parent"
@@ -243,27 +317,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <dji.v5.ux.map.MapWidget
-            android:id="@+id/widget_map"
-            android:layout_width="@dimen/uxsdk_150_dp"
-            android:layout_height="@dimen/uxsdk_100_dp"
-            android:layout_marginEnd="12dp"
-            android:layout_marginBottom="12dp"
-            android:visibility="gone"
-            app:uxsdk_mapBoxToken="pk.eyJ1Ijoicm9kcmlnb3NzdCIsImEiOiJjbHd6Y2k3eDkwNjQ4MmpxM3M5b2d5cWR0In0.JyvL06SxK6PEphFMh6g5zw"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:uxsdk_djiMap_mapType="normal" />
-
-        <com.mapbox.mapboxsdk.maps.MapView
-            android:id="@+id/map"
-            android:layout_width="@dimen/uxsdk_150_dp"
-            android:layout_height="@dimen/uxsdk_100_dp"
-            android:layout_marginEnd="12dp"
-            android:layout_marginBottom="12dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
         <dji.v5.ux.core.panel.systemstatus.SystemStatusListPanelWidget
             android:id="@+id/widget_panel_system_status_list"
             android:layout_width="0dp"
@@ -282,24 +335,14 @@
             app:layout_constraintWidth_percent="0.95"
             app:uxsdk_titleBarBackgroundColor="@color/uxsdk_black" />
 
-        <TextView
-            android:id="@+id/tv_live_stream_info"
-            android:layout_width="400dp"
-            android:layout_height="200dp"
-            android:text="@string/n_a"
-            android:textColor="@color/blue"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
-
         <org.webrtc.SurfaceViewRenderer
             android:id="@+id/playerView"
             android:layout_width="200dp"
             android:layout_height="100dp"
             android:layout_margin="16dp"
             android:visibility="gone"
-            app:layout_constraintDimensionRatio="16:9"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintDimensionRatio="16:9"
             app:layout_constraintStart_toStartOf="parent" />
 
         <com.google.android.material.progressindicator.CircularProgressIndicator
@@ -350,9 +393,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:fontFamily="@font/ubuntu_bold"
+                android:text="@string/starting_streamer"
                 android:textAlignment="center"
                 android:textSize="14sp"
-                android:text="@string/starting_streamer"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -361,30 +404,28 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fbStartStop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|right"
+            android:layout_margin="16dp"
+            app:backgroundTint="@color/blue_main"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:srcCompat="@drawable/ic_play"
+            app:tint="@color/white" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <ToggleButton
-        android:id="@+id/aiButton"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:visibility="gone"
-        android:layout_marginBottom="80dp"
-        android:layout_marginEnd="16dp"
-        android:layout_gravity="bottom|end"
-        android:background="@drawable/ic_ai_button"
-        android:textColor="@color/white"
-        android:textOff="@string/ai"
-        android:textOn="@string/ai"
-        android:textSize="18sp"/>
+    <dji.v5.ux.core.widget.setting.SettingPanelWidget
+        android:id="@+id/manual_right_nav_setting"
+        android:layout_width="@dimen/uxsdk_510_dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="@color/uxsdk_fpv_popover_content_background_color"
+        android:descendantFocusability="afterDescendants">
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fbStartStop"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|right"
-        android:layout_margin="16dp"
-        app:backgroundTint="@color/blue_main"
-        app:srcCompat="@drawable/ic_play"
-        app:tint="@color/white" />
+    </dji.v5.ux.core.widget.setting.SettingPanelWidget>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</androidx.drawerlayout.widget.DrawerLayout>
