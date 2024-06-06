@@ -25,8 +25,8 @@
                 android:layout_height="match_parent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:uxsdk_cameraNameTextSize="14dp"
-                app:uxsdk_cameraSideTextSize="14dp"
+                app:uxsdk_cameraNameTextSize="10dp"
+                app:uxsdk_cameraSideTextSize="10dp"
                 app:uxsdk_videoChannelType="primaryStreamChannel">
 
                 <dji.v5.ux.cameracore.widget.fpvinteraction.FPVInteractionWidget
@@ -38,7 +38,7 @@
             </dji.v5.ux.core.widget.fpv.FPVWidget>
 
             <ImageView
-                android:id="@+id/imgShowPrimaryFpv"
+                android:id="@+id/imgFullScreenPrimaryFpv"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@color/transparent_10_gray"
@@ -46,6 +46,46 @@
                 app:layout_constraintStart_toStartOf="@id/widget_primary_fpv"
                 app:layout_constraintTop_toTopOf="@id/widget_primary_fpv"
                 app:tint="@color/icon_gray" />
+
+            <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/playerView"
+                android:layout_width="200dp"
+                android:layout_height="100dp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintDimensionRatio="16:9"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <ImageView
+                android:id="@+id/imgAiFullscreen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@color/transparent_10_gray"
+                android:src="@drawable/ic_fullscreen"
+                app:layout_constraintStart_toStartOf="@id/playerView"
+                app:layout_constraintTop_toTopOf="@id/playerView"
+                app:tint="@color/icon_gray" />
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/loadingAi"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="@+id/playerView"
+                app:layout_constraintEnd_toEndOf="@+id/playerView"
+                app:layout_constraintStart_toStartOf="@+id/playerView"
+                app:layout_constraintTop_toTopOf="@+id/playerView" />
+
+            <TextView
+                android:id="@+id/txtMessage"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:textAlignment="center"
+                app:layout_constraintBottom_toBottomOf="@id/playerView"
+                app:layout_constraintEnd_toEndOf="@id/playerView"
+                app:layout_constraintStart_toStartOf="@id/playerView"
+                app:layout_constraintTop_toTopOf="@id/playerView" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/contentMap"
@@ -100,20 +140,6 @@
                     app:layout_constraintStart_toStartOf="@id/widget_map"
                     app:layout_constraintTop_toTopOf="@id/widget_map"
                     app:tint="@color/icon_gray" />
-
-                <ToggleButton
-                    android:id="@+id/aiButton"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_margin="12dp"
-                    android:background="@drawable/ic_ai_button"
-                    android:textColor="@color/white"
-                    android:textOff="@string/ai"
-                    android:textOn="@string/ai"
-                    android:textSize="18sp"
-                    android:visibility="gone"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/imgShowMap" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -335,37 +361,6 @@
             app:layout_constraintWidth_percent="0.95"
             app:uxsdk_titleBarBackgroundColor="@color/uxsdk_black" />
 
-        <org.webrtc.SurfaceViewRenderer
-            android:id="@+id/playerView"
-            android:layout_width="200dp"
-            android:layout_height="100dp"
-            android:layout_margin="16dp"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintDimensionRatio="16:9"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:id="@+id/loadingAi"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:indeterminate="true"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="@+id/playerView"
-            app:layout_constraintEnd_toEndOf="@+id/playerView"
-            app:layout_constraintStart_toStartOf="@+id/playerView"
-            app:layout_constraintTop_toTopOf="@+id/playerView" />
-
-        <TextView
-            android:id="@+id/txtMessage"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:textAlignment="center"
-            app:layout_constraintBottom_toBottomOf="@id/playerView"
-            app:layout_constraintEnd_toEndOf="@id/playerView"
-            app:layout_constraintStart_toStartOf="@id/playerView"
-            app:layout_constraintTop_toTopOf="@id/playerView" />
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/contentLoading"
             android:layout_width="wrap_content"
@@ -404,13 +399,29 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
+        <ToggleButton
+            android:id="@+id/aiButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="12dp"
+            android:background="@drawable/ic_ai_button"
+            android:textColor="@color/white"
+            android:textOff="@string/ai"
+            android:textOn="@string/ai"
+            android:textSize="18sp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@+id/fbStartStop"
+            app:layout_constraintEnd_toStartOf="@+id/fbStartStop"
+            app:layout_constraintStart_toEndOf="@id/imgShowMap"
+            app:layout_constraintTop_toTopOf="@+id/fbStartStop" />
+
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fbStartStop"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|right"
-            android:layout_margin="16dp"
-            app:backgroundTint="@color/blue_main"
+            android:layout_margin="12dp"
+            app:backgroundTint="@color/main_blue"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:srcCompat="@drawable/ic_play"
