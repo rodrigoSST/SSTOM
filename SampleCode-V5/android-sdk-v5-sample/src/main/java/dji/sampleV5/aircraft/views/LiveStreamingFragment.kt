@@ -792,6 +792,7 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
         binding.fbStartStop.show()
         binding.imgMapMinimize.show()
         binding.imgShowMap.show()
+        binding.imgMapFullscreen.show()
         if (isStreaming)
             binding.aiButton.show()
     }
@@ -817,6 +818,7 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
 
         binding.imgMapMinimize.hide()
         binding.imgShowMap.hide()
+        binding.imgMapFullscreen.hide()
     }
 
     private fun showAiFullScreen() {
@@ -846,6 +848,7 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
         binding.fbStartStop.show()
         binding.imgMapMinimize.show()
         binding.imgShowMap.show()
+        binding.imgMapFullscreen.show()
     }
 
     private fun animateView(
