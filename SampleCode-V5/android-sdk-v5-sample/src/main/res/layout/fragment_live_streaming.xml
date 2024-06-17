@@ -41,7 +41,6 @@
                 android:id="@+id/playerView"
                 android:layout_width="200dp"
                 android:layout_height="100dp"
-                android:background="@color/black"
                 android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintDimensionRatio="16:9"
@@ -129,7 +128,7 @@
                 android:id="@+id/widget_secondary_fpv"
                 android:layout_width="@dimen/uxsdk_mini_map_width"
                 android:layout_height="@dimen/uxsdk_mini_map_height"
-                android:layout_marginTop="52dp"
+                android:layout_marginTop="60dp"
                 android:layout_marginStart="@dimen/uxsdk_52_dp"
                 android:elevation="100dp"
                 app:layout_constraintStart_toStartOf="parent"
@@ -279,12 +278,12 @@
 
         <dji.v5.ux.cameracore.widget.cameracontrols.lenscontrol.LensControlWidget
             android:id="@+id/widget_lens_control"
-            android:layout_width="@dimen/uxsdk_76_dp"
-            android:layout_height="@dimen/uxsdk_95_dp"
-            android:layout_marginStart="12dp"
+            android:layout_width="150dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="@dimen/uxsdk_52_dp"
             android:layout_marginTop="125dp"
             android:padding="3dp"
-            app:layout_constraintStart_toEndOf="@id/widget_take_off"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/widget_remaining_flight_time" />
 
         <dji.v5.ux.flight.returnhome.ReturnHomeWidget

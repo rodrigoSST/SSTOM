@@ -3,7 +3,7 @@ package dji.v5.ux.cameracore.widget.cameracontrols.lenscontrol
 import android.content.Context
 import android.util.AttributeSet
 import android.view.View
-import android.widget.Button
+import android.widget.TextView
 import dji.sdk.keyvalue.value.camera.CameraVideoStreamSourceType
 import dji.sdk.keyvalue.value.common.CameraLensType
 import dji.sdk.keyvalue.value.common.ComponentIndexType
@@ -124,8 +124,8 @@ open class LensControlWidget @JvmOverloads constructor(
         })
     }
 
-    private fun updateBtnText(button: Button, source: CameraVideoStreamSourceType) {
-        button.text = when (source) {
+    private fun updateBtnText(textView: TextView, source: CameraVideoStreamSourceType) {
+        textView.text = when (source) {
             CameraVideoStreamSourceType.WIDE_CAMERA -> StringUtils.getResStr(R.string.uxsdk_lens_type_wide)
             CameraVideoStreamSourceType.ZOOM_CAMERA -> StringUtils.getResStr(R.string.uxsdk_lens_type_zoom)
             CameraVideoStreamSourceType.INFRARED_CAMERA -> StringUtils.getResStr(R.string.uxsdk_lens_type_ir)

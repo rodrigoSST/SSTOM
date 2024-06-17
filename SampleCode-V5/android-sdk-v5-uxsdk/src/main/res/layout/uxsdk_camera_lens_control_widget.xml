@@ -4,31 +4,36 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:background="@android:color/transparent"
+    android:backgroundTint="@color/uxsdk_black_20_percent"
     tools:parentTag="dji.v5.ux.cameracore.widget.cameracontrols.lenscontrol.LensControlWidget">
 
-    <Button
+    <TextView
         android:id="@+id/first_len_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:paddingVertical="@dimen/uxsdk_4_dp"
+        android:paddingHorizontal="@dimen/uxsdk_8_dp"
+        android:background="@drawable/bg_button_lens_control"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/second_len_btn"
+        app:layout_constraintBottom_toBottomOf="parent"
         android:text="first"
-        android:textColor="@color/uxsdk_black"
-        android:textSize="@dimen/uxsdk_text_size_normal_medium" />
+        android:textColor="@color/uxsdk_white"
+        android:textSize="10sp" />
 
-    <Button
+    <TextView
         android:id="@+id/second_len_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/first_len_btn"
+        android:layout_marginStart="@dimen/uxsdk_8_dp"
+        android:paddingVertical="@dimen/uxsdk_4_dp"
+        android:paddingHorizontal="@dimen/uxsdk_8_dp"
+        android:background="@drawable/bg_button_lens_control"
+        app:layout_constraintStart_toEndOf="@id/first_len_btn"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         android:text="second"
-        android:textColor="@color/uxsdk_black"
-        android:textSize="@dimen/uxsdk_text_size_normal_medium" />
+        android:textColor="@color/uxsdk_white"
+        android:textSize="10sp" />
 
 </merge>
