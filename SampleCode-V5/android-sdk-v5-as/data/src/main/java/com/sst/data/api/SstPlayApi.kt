@@ -1,4 +1,4 @@
-package com.sst.data.model.api
+package com.sst.data.api
 
 import com.sst.data.model.request.LoginRequest
 import com.sst.data.model.request.StartStream

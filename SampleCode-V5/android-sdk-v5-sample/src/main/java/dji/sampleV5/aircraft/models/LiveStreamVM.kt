@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.sst.data.model.repository.StreamRepository
+import com.sst.data.repository.StreamRepository
 import com.sst.data.model.request.StartStream
 import dji.sampleV5.aircraft.comom.mapper.toUiModel
 import dji.sampleV5.aircraft.model.DeviceDataResponse

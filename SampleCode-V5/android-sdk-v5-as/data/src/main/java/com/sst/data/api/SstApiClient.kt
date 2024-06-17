@@ -1,6 +1,4 @@
-package com.sst.data.model.api
-
-import com.reisdeveloper.listeneraccuracy.api.RetrofitService
+package com.sst.data.api
 
 class SstApiClient {
     fun provideAPIEndpoints(): SstPlayApi = RetrofitService.getInstance(

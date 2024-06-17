@@ -1,8 +1,7 @@
-package com.sst.data.model.repository
+package com.sst.data.repository
 
-import com.sst.data.model.api.SstPlayApi
+import com.sst.data.api.SstPlayApi
 import com.sst.data.model.request.StartStream
-import com.sst.data.model.response.DeviceDataResponse
 import com.sst.data.model.response.Response
 import com.sst.data.model.response.StartStreamResponse
 

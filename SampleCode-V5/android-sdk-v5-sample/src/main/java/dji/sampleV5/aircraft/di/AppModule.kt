@@ -1,7 +1,5 @@
 package dji.sampleV5.aircraft.di
 
-import com.sst.data.model.repository.LoginRepository
-import com.sst.data.model.repository.LoginRepositoryImpl
 import dji.sampleV5.aircraft.api.APIClient
 import dji.sampleV5.aircraft.api.DeviceStreamAPI
 import dji.sampleV5.aircraft.data.repository.DeviceDataRepository

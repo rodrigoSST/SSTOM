@@ -3,7 +3,7 @@ package dji.sampleV5.aircraft.views.login
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.sst.data.model.repository.LoginRepository
+import com.sst.data.repository.LoginRepository
 import com.sst.data.model.request.LoginRequest
 import com.sst.data.model.response.LoginResponse
 import dji.sampleV5.aircraft.views.base.BaseViewModel

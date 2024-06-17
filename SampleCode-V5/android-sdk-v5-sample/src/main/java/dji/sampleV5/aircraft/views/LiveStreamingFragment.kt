@@ -137,11 +137,19 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
     private lateinit var surfaceView: SurfaceView
     private lateinit var mDrawerLayout: DrawerLayout
 
-    private var originalWidth = 0
-    private var originalHeight = 0
+    private var widgetWidth = 0
+    private var widgetHeight = 0
 
     private val idDevice by lazy {
         arguments?.getString(EXTRA_ID_DEVICE)
+    }
+
+    private val inferenceModel by lazy {
+        arguments?.getString(EXTRA_INFERENCE_MODEL) ?: "eco"
+    }
+
+    private val analyticsConfig by lazy {
+        arguments?.getString(EXTRA_ANALYTICS_CONFIG) ?: "config_none"
     }
 
     private lateinit var streamId: String
@@ -258,7 +266,6 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
             .setStateChangeResourceId(dji.v5.ux.R.id.panel_camera_controls_exposure_settings)
         mDrawerLayout = view.findViewById<DrawerLayout>(dji.v5.ux.R.id.root_view)
 
-
         MediaDataCenter.getInstance().videoStreamManager.addStreamSourcesListener { sources: List<StreamSource>? ->
             activity?.runOnUiThread { updateFPVWidgetSource(sources) }
         }
@@ -277,7 +284,6 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
         secondaryFPVWidget.setSurfaceViewZOrderMediaOverlay(true)
 
         mapWidget.initAMap { map: DJIMap ->
-            // map.setOnMapClickListener(latLng -> onViewClick(mapWidget))
             val uiSetting = map.uiSettings
             uiSetting?.setZoomControlsEnabled(false)
         }
@@ -303,6 +309,7 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
                 super.onPlayStarted(streamId)
                 try {
                     binding.loadingAi.isVisible = false
+                    binding.txtMessage.isVisible = false
                 } catch (e: Exception) {
                     e.stackTrace
                 }
@@ -325,6 +332,7 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
 
     private fun handleError(error: String, loading: CircularProgressIndicator) {
         loading.isVisible = false
+        binding.txtMessage.isVisible = true
         if (error == "no_stream_exist")
             binding.txtMessage.text = getString(R.string.no_stream_to_play)
         else
@@ -433,7 +441,9 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
                 stopPlayer()
         }
 
-        secondaryFPVWidget.setOnClickListener { v: View? -> swapVideoSource() }
+        secondaryFPVWidget.setOnClickListener { v: View? ->
+            swapVideoSource()
+        }
 
         initChannelStateListener()
 
@@ -443,8 +453,8 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
         val simulatorIndicatorWidget = topBarPanel.simulatorIndicatorWidget
         simulatorIndicatorWidget?.setOnClickListener { v: View? -> simulatorControlWidget.toggleVisibility() }
 
-        originalHeight = resources.getDimension(R.dimen.mini_map_height).toInt()
-        originalWidth = resources.getDimension(R.dimen.mini_map_width).toInt()
+        widgetHeight = resources.getDimension(R.dimen.mini_map_height).toInt()
+        widgetWidth = resources.getDimension(R.dimen.mini_map_width).toInt()
 
         binding.imgShowMap.setOnClickListener {
             mapWidget.show()
@@ -457,116 +467,19 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
         }
 
         binding.imgMapFullscreen.setOnClickListener {
-            primaryFpvWidget.elevation = 50f
-            binding.imgFullScreenPrimaryFpv.elevation = 50f
-            binding.widgetFpvInteraction.isInteractionEnabled = false
-
-            animateView(
-                mapWidget,
-                mapWidget.width,
-                binding.contentMap.width,
-                mapWidget.height,
-                binding.contentMap.height
-            )
-            animateView(
-                primaryFpvWidget,
-                primaryFpvWidget.width,
-                originalWidth,
-                primaryFpvWidget.height,
-                originalHeight
-            )
-
-            binding.fbStartStop.hide()
-            binding.aiButton.hide()
-            binding.imgMapMinimize.hide()
-            binding.imgShowMap.hide()
-            binding.imgAiFullscreen.hide()
+            shoMapFullScreen()
         }
 
-        binding.imgFullScreenPrimaryFpv.setOnClickListener {
-            primaryFpvWidget.elevation = 0f
-            binding.imgFullScreenPrimaryFpv.elevation = 0f
-
-            binding.widgetFpvInteraction.isInteractionEnabled = true
-
-            binding.playerView.elevation = 50f
-            binding.imgAiFullscreen.elevation = 50f
-
-            animateView(mapWidget, mapWidget.width, originalWidth, mapWidget.height, originalHeight)
-            animateView(
-                primaryFpvWidget,
-                primaryFpvWidget.width,
-                binding.fpvHolder.width,
-                primaryFpvWidget.height,
-                binding.fpvHolder.height
-            )
-
-            animateView(
-                binding.playerView,
-                binding.playerView.width,
-                originalWidth,
-                binding.playerView.height,
-                originalHeight
-            )
-
-            binding.fbStartStop.show()
-            binding.imgMapMinimize.show()
-            binding.imgShowMap.show()
-            if (isStreaming)
-                binding.aiButton.show()
+        binding.widgetPrimaryFpv.setOnClickListener {
+            showPrimaryFpvFullScreen()
         }
 
-        binding.imgAiFullscreen.setOnClickListener {
-            primaryFpvWidget.elevation = 50f
-            binding.imgFullScreenPrimaryFpv.elevation = 50f
-            binding.widgetFpvInteraction.isInteractionEnabled = false
-
-            binding.playerView.elevation = 0f
-            binding.imgAiFullscreen.elevation = 0f
-
-            animateView(mapWidget, mapWidget.width, originalWidth, mapWidget.height, originalHeight)
-
-            animateView(
-                primaryFpvWidget,
-                primaryFpvWidget.width,
-                originalWidth,
-                primaryFpvWidget.height,
-                originalHeight
-            )
-
-            animateView(
-                binding.playerView,
-                binding.playerView.width,
-                binding.fpvHolder.width,
-                binding.playerView.height,
-                binding.fpvHolder.height
-            )
-
-            binding.fbStartStop.show()
-            binding.imgMapMinimize.show()
-            binding.imgShowMap.show()
+        binding.playerView.setOnClickListener {
+            showAiFullScreen()
         }
     }
 
     private fun setupObservers() {
-        liveStreamVM.liveStreamStatus.observe(viewLifecycleOwner) {
-            it?.let {
-                fps = it.fps
-                vbps = it.vbps
-                resolution_w = it.resolution?.width!!
-                resolution_h = it.resolution?.height!!
-                packet_loss = it.packetLoss
-                packet_cache_len = it.packetCacheLen
-                rtt = it.rtt
-            }
-        }
-
-        liveStreamVM.liveStreamError.observe(viewLifecycleOwner) {
-            it?.let {
-                error = it
-            }
-        }
-
         liveStreamVM.error.observe(viewLifecycleOwner) {
             binding.contentLoading.isVisible = false
             ToastUtils.showToast(it)
@@ -576,7 +489,7 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
             if (!isStreaming) {
                 streamId = it.streamId
                 thread(start = true) {
-                    Thread.sleep(10000)
+                    Thread.sleep(30000)
                     lifecycleScope.launch {
                         try {
                             binding.contentLoading.isVisible = false
@@ -803,7 +716,9 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
                     StartStream(
                         it,
                         location?.latitude ?: 0.0,
-                        location?.longitude ?: 0.0
+                        location?.longitude ?: 0.0,
+                        inferenceModel,
+                        analyticsConfig
                     )
                 )
             }
@@ -823,7 +738,9 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
     private fun playerStream() {
         binding.playerView.isVisible = true
         binding.loadingAi.isVisible = true
-        webRTCClient.play(streamId)
+        lifecycleScope.launch {
+            webRTCClient.play(streamId)
+        }
     }
 
     private fun stopPlayer() {
@@ -846,6 +763,89 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         videoDecoder?.onPause()
         streamer.stopPreview()
+    }
+
+    private fun showPrimaryFpvFullScreen() {
+        primaryFpvWidget.elevation = 0f
+
+        binding.widgetFpvInteraction.isInteractionEnabled = true
+
+        binding.playerView.elevation = 50f
+
+        animateView(mapWidget, mapWidget.width, widgetWidth, mapWidget.height, widgetHeight)
+        animateView(
+            primaryFpvWidget,
+            primaryFpvWidget.width,
+            binding.fpvHolder.width,
+            primaryFpvWidget.height,
+            binding.fpvHolder.height
+        )
+
+        animateView(
+            binding.playerView,
+            binding.playerView.width,
+            widgetWidth,
+            binding.playerView.height,
+            widgetHeight
+        )
+
+        binding.fbStartStop.show()
+        binding.imgMapMinimize.show()
+        binding.imgShowMap.show()
+        if (isStreaming)
+            binding.aiButton.show()
+    }
+
+    private fun shoMapFullScreen() {
+        primaryFpvWidget.elevation = 50f
+        binding.widgetFpvInteraction.isInteractionEnabled = false
+
+        animateView(
+            mapWidget,
+            mapWidget.width,
+            binding.contentMap.width,
+            mapWidget.height,
+            binding.contentMap.height
+        )
+        animateView(
+            primaryFpvWidget,
+            primaryFpvWidget.width,
+            widgetWidth,
+            primaryFpvWidget.height,
+            widgetHeight
+        )
+
+        binding.imgMapMinimize.hide()
+        binding.imgShowMap.hide()
+    }
+
+    private fun showAiFullScreen() {
+        primaryFpvWidget.elevation = 50f
+        binding.widgetFpvInteraction.isInteractionEnabled = false
+
+        binding.playerView.elevation = 0f
+
+        animateView(mapWidget, mapWidget.width, widgetWidth, mapWidget.height, widgetHeight)
+
+        animateView(
+            primaryFpvWidget,
+            primaryFpvWidget.width,
+            widgetWidth,
+            primaryFpvWidget.height,
+            widgetHeight
+        )
+
+        animateView(
+            binding.playerView,
+            binding.playerView.width,
+            binding.fpvHolder.width,
+            binding.playerView.height,
+            binding.fpvHolder.height
+        )
+
+        binding.fbStartStop.show()
+        binding.imgMapMinimize.show()
+        binding.imgShowMap.show()
     }
 
     private fun animateView(
@@ -904,6 +904,8 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
 
     companion object {
         const val EXTRA_ID_DEVICE = "EXTRA_ID_DEVICE"
+        const val EXTRA_INFERENCE_MODEL = "EXTRA_INFERENCE_MODEL"
+        const val EXTRA_ANALYTICS_CONFIG = "EXTRA_ANALYTICS_CONFIG"
         const val WEBRTC_HOST =
             "wss://ec2-3-88-125-209.compute-1.amazonaws.com:5443/WebRTCAppEE/websocket"
     }

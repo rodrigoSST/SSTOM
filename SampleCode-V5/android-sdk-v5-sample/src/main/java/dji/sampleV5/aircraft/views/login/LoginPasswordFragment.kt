@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.text.InputType
 import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
 import androidx.core.view.isVisible
 import androidx.navigation.fragment.findNavController
 import com.sst.data.model.request.LoginRequest
@@ -17,7 +16,9 @@ import dji.sampleV5.aircraft.comom.extensions.pop
 import dji.sampleV5.aircraft.comom.extensions.safeLet
 import dji.sampleV5.aircraft.databinding.FragmentLoginBinding
 import dji.sampleV5.aircraft.enums.DeviceType
+import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.EXTRA_ANALYTICS_CONFIG
 import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.EXTRA_ID_DEVICE
+import dji.sampleV5.aircraft.views.LiveStreamingFragment.Companion.EXTRA_INFERENCE_MODEL
 import dji.sampleV5.aircraft.views.base.BaseActivityContract
 import dji.sampleV5.aircraft.views.base.BaseFragment
 import dji.v5.utils.inner.SDKConfig
@@ -54,7 +55,8 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
         }
         binding.tiField.hint = getString(R.string.what_is_your_password)
 
-        binding.etField.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        binding.etField.inputType =
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
 
         binding.etField.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_NEXT) {
@@ -77,6 +79,8 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
                     R.id.action_navigation_login_password_to_navigation_livestreaming,
                     Bundle().apply {
                         putString(EXTRA_ID_DEVICE, it.device.idDevice)
+                        putString(EXTRA_INFERENCE_MODEL, it.device.inferenceModel)
+                        putString(EXTRA_ANALYTICS_CONFIG, it.device.analyticsConfig)
                     }
                 )
             }
@@ -118,7 +122,10 @@ class LoginPasswordFragment : BaseFragment<FragmentLoginBinding, LoginViewModel>
     private fun getDeviceId() =
         SDKConfig.getInstance().deviceId
 
-    private fun savePrefs(userId: String, deviceId: String) {
+    private fun savePrefs(
+        userId: String,
+        deviceId: String
+    ) {
         val sharedPreferences = activity?.getSharedPreferences(SHARED_PREFS, Context.MODE_PRIVATE)
         val prefEdit = sharedPreferences?.edit()
         prefEdit?.putString(PREFS_USER_ID, userId)

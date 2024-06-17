@@ -7,4 +7,8 @@ data class StartStream(
     val idDevice: String,
     val lat: Double,
     val long: Double,
+    @SerializedName("inference_model")
+    val inferenceModel: String,
+    @SerializedName("analytics_config")
+    val analyticsConfig: String
 )

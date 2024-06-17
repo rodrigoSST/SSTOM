@@ -1,6 +1,6 @@
-package com.sst.data.model.repository
+package com.sst.data.repository
 
-import com.sst.data.model.api.SstPlayApi
+import com.sst.data.api.SstPlayApi
 import com.sst.data.model.response.DeviceDataResponse
 
 interface DeviceRepository {

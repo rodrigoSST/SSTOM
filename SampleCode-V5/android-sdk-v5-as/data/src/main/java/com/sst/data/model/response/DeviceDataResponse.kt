@@ -6,6 +6,8 @@ data class DeviceDataResponse(
     val deviceID: String,
     @SerializedName("device_model")
     val deviceModel: String,
+    @SerializedName("device_name")
+    val deviceName: String,
     @SerializedName("device_type")
     val deviceType: String,
     val email: String,
@@ -28,5 +30,9 @@ data class DeviceDataResponse(
     val streamId: String,
     val lat: Double,
     val long: Double,
-    val status: String
+    val status: String,
+    @SerializedName("inference_model")
+    val inferenceModel: String? = "eco",
+    @SerializedName("analytics_config")
+    val analyticsConfig: String? = "config_none"
 )

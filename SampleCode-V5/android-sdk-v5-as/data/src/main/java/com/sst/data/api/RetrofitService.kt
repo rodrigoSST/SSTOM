@@ -1,4 +1,4 @@
-package com.reisdeveloper.listeneraccuracy.api
+package com.sst.data.api
 
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
