@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/playerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/txtAi"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="4dp"
+        android:layout_marginTop="@dimen/uxsdk_8_dp"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        android:text="@string/ai"
+        android:background="@color/transparent_30_gray"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toEndOf="@id/playerView"
+        app:layout_constraintStart_toStartOf="@id/playerView"
+        app:layout_constraintTop_toTopOf="@id/playerView" />
+
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/loadingAi"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/playerView"
+        app:layout_constraintEnd_toEndOf="@+id/playerView"
+        app:layout_constraintStart_toStartOf="@+id/playerView"
+        app:layout_constraintTop_toTopOf="@+id/playerView" />
+
+    <TextView
+        android:id="@+id/txtMessage"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="@id/playerView"
+        app:layout_constraintEnd_toEndOf="@id/playerView"
+        app:layout_constraintStart_toStartOf="@id/playerView"
+        app:layout_constraintTop_toTopOf="@id/playerView" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

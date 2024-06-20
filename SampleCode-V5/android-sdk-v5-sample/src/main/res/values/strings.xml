@@ -487,4 +487,5 @@ More refer to the release notes." </string>
     <string name="not_connected_yet">Aircraft yet</string>
     <string name="ai">AI</string>
     <string name="remember_me">Remeber me</string>
+    <string name="version">version: %s</string>
 </resources>

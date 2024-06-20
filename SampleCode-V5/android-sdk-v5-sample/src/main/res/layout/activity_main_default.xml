@@ -14,99 +14,27 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/contentMain"
-        android:visibility="gone"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+    <TextView
+        android:id="@+id/txtVersion"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/uxsdk_16_dp"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tool:text="version 1.0.0" />
 
-        <ImageView
-            android:id="@+id/imgDevice"
-            android:layout_width="@dimen/uxsdk_200_dp"
-            android:layout_height="@dimen/uxsdk_150_dp"
-            android:scaleType="centerInside"
-            android:layout_margin="@dimen/uxsdk_32_dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/txtInfo"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/uxsdk_16_dp"
-            android:textAlignment="center"
-            app:layout_constraintEnd_toEndOf="@id/imgDevice"
-            app:layout_constraintStart_toStartOf="@id/imgDevice"
-            app:layout_constraintTop_toBottomOf="@id/imgDevice" />
-
-        <TextView
-            android:id="@+id/txtRegistrationStatus"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:textAlignment="center"
-            app:layout_constraintEnd_toEndOf="@id/txtInfo"
-            app:layout_constraintStart_toStartOf="@id/txtInfo"
-            app:layout_constraintTop_toBottomOf="@id/txtInfo" />
-
-        <TextView
-            android:id="@+id/txtAppVersion"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/uxsdk_32_dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            tool:text="version 1.0.0"/>
-
-        <ImageView
-            android:id="@+id/imgLogo"
-            android:layout_width="@dimen/uxsdk_100_dp"
-            android:layout_height="@dimen/uxsdk_100_dp"
-            android:paddingTop="8dp"
-            android:layout_margin="@dimen/uxsdk_32_dp"
-            android:src="@drawable/logo_sstom"
-            android:background="@drawable/bg_rounded"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/btnWidgetList"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/activity_horizontal_margin"
-            android:layout_marginBottom="@dimen/uxsdk_16_dp"
-            android:text="@string/widget_list"
-            app:layout_constraintEnd_toEndOf="@+id/imgLogo"
-            app:layout_constraintStart_toStartOf="@+id/imgLogo"
-            app:layout_constraintTop_toBottomOf="@+id/imgLogo" />
-
-        <TextView
-            android:id="@+id/btnTestingTools"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/uxsdk_16_dp"
-            android:text="@string/testing_tools"
-            app:layout_constraintEnd_toEndOf="@+id/btnWidgetList"
-            app:layout_constraintStart_toStartOf="@+id/btnWidgetList"
-            app:layout_constraintTop_toBottomOf="@+id/btnWidgetList" />
-
-        <TextView
-            android:id="@+id/btnDefaultLayout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/uxsdk_16_dp"
-            android:text="@string/default_layout"
-            app:layout_constraintEnd_toEndOf="@id/btnTestingTools"
-            app:layout_constraintStart_toStartOf="@id/btnTestingTools"
-            app:layout_constraintTop_toBottomOf="@id/btnTestingTools" />
-
-        <Button
-            android:id="@+id/btnLiveStream"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/uxsdk_24_dp"
-            android:text="@string/live_streaming"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    <TextView
+        android:id="@+id/txtInfo"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/uxsdk_16_dp"
+        android:textAlignment="center"
+        android:textColor="@color/red"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

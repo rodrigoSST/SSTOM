@@ -72,4 +72,6 @@
     <declare-styleable name="RemainingFlightTimeWidget">
         <attr name="isMocked" format="boolean"/>
     </declare-styleable>
+
+    <declare-styleable name="InferenceStreamView"/>
 </resources>

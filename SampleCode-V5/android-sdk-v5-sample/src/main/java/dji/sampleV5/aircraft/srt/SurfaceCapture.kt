@@ -3,6 +3,7 @@ package dji.sampleV5.aircraft.srt
 import android.media.MediaFormat
 import android.os.SystemClock
 import android.view.Surface
+import com.google.android.material.color.utilities.MaterialDynamicColors.surface
 import dji.sdk.keyvalue.value.common.ComponentIndexType
 import dji.v5.manager.interfaces.ICameraStreamManager
 import io.github.thibaultbee.streampack.data.VideoConfig
@@ -25,7 +26,7 @@ class SurfaceCapture(
         return Frame(byteBuffer, MediaFormat.MIMETYPE_VIDEO_HEVC, System.currentTimeMillis())
     }
 
-    private var fps: Int = 30
+    private var fps: Int = 20
     private var isStreaming = false
     private var isPreviewing = false
 
@@ -52,13 +53,15 @@ class SurfaceCapture(
     }
 
     fun switchCamera(cameraIndex: ComponentIndexType) {
-        cameraStreamManager.putCameraStreamSurface(
-            cameraIndex,
-            encoderSurface!!,
-            1280,
-            720,
-            ICameraStreamManager.ScaleType.CENTER_INSIDE
-        )
+        encoderSurface?.let { surface ->
+            cameraStreamManager.putCameraStreamSurface(
+                cameraIndex,
+                surface,
+                1280,
+                720,
+                ICameraStreamManager.ScaleType.CENTER_INSIDE
+            )
+        }
     }
 
     private fun checkStream() =

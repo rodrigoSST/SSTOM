@@ -18,10 +18,10 @@ import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.sst.data.model.request.StartStream
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
+import dji.sampleV5.aircraft.enums.ViewType
 import dji.sampleV5.aircraft.models.LiveStreamVM
 import dji.sampleV5.aircraft.pages.DJIFragment
 import dji.sampleV5.aircraft.srt.streamers.SurfaceSrtLiveStreamer
@@ -70,9 +70,6 @@ import dji.v5.ux.training.simulatorcontrol.SimulatorControlWidget.UIState.Visibi
 import dji.v5.ux.visualcamera.CameraNDVIPanelWidget
 import dji.v5.ux.visualcamera.CameraVisiblePanelWidget
 import dji.v5.ux.visualcamera.zoom.FocalZoomWidget
-import io.antmedia.webrtcandroidframework.api.DefaultWebRTCListener
-import io.antmedia.webrtcandroidframework.api.IWebRTCClient
-import io.antmedia.webrtcandroidframework.api.IWebRTCListener
 import io.github.thibaultbee.streampack.data.VideoConfig
 import io.github.thibaultbee.streampack.error.StreamPackError
 import io.github.thibaultbee.streampack.listeners.OnConnectionListener
@@ -153,7 +150,6 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
     }
 
     private lateinit var streamId: String
-    private lateinit var webRTCClient: IWebRTCClient
 
     private var compositeDisposable: CompositeDisposable? = null
     private val cameraSourceProcessor = DataProcessor.create(
@@ -217,6 +213,8 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
     }
 
     private val streamerLifeCycleObserver by lazy { StreamerLifeCycleObserver(streamer) }
+
+    private var fullViewType = ViewType.FPV
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -291,52 +289,7 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
 
         initListener()
         setupObservers()
-
-        webRTCClient = IWebRTCClient.builder()
-            .setActivity(activity)
-            .setAudioCallEnabled(false)
-            .setVideoCallEnabled(false)
-            .addRemoteVideoRenderer(binding.playerView)
-            .setWebRTCListener(createWebRTCListener())
-            .setServerUrl(WEBRTC_HOST)
-            .setReconnectionEnabled(true)
-            .build()
-    }
-
-    private fun createWebRTCListener(): IWebRTCListener {
-        return object : DefaultWebRTCListener() {
-            override fun onPlayStarted(streamId: String) {
-                super.onPlayStarted(streamId)
-                try {
-                    binding.loadingAi.isVisible = false
-                    binding.txtMessage.isVisible = false
-                } catch (e: Exception) {
-                    e.stackTrace
-                }
-            }
-
-            override fun onPlayFinished(streamId: String) {
-                super.onPlayFinished(streamId)
-            }
-
-            override fun onError(description: String?, streamId: String?) {
-                super.onError(description, streamId)
-                try {
-                    description?.let { handleError(it, binding.loadingAi) }
-                } catch (e: Exception) {
-                    e.stackTrace
-                }
-            }
-        }
-    }
-
-    private fun handleError(error: String, loading: CircularProgressIndicator) {
-        loading.isVisible = false
-        binding.txtMessage.isVisible = true
-        if (error == "no_stream_exist")
-            binding.txtMessage.text = getString(R.string.no_stream_to_play)
-        else
-            binding.txtMessage.text = error
+        activity?.let { binding.inferenceStream.setActivity(it) }
     }
 
     private fun toast(message: String) {
@@ -467,14 +420,14 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
         }
 
         binding.imgMapFullscreen.setOnClickListener {
-            shoMapFullScreen()
+            showMapFullScreen()
         }
 
         binding.widgetPrimaryFpv.setOnClickListener {
             showPrimaryFpvFullScreen()
         }
 
-        binding.playerView.setOnClickListener {
+        binding.inferenceStream.setOnClickListener {
             showAiFullScreen()
         }
     }
@@ -736,17 +689,13 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
     }
 
     private fun playerStream() {
-        binding.playerView.isVisible = true
-        binding.loadingAi.isVisible = true
-        lifecycleScope.launch {
-            webRTCClient.play(streamId)
-        }
+        binding.inferenceStream.isVisible = true
+        binding.inferenceStream.startStreaming(streamId)
     }
 
     private fun stopPlayer() {
-        binding.playerView.isVisible = false
-        binding.loadingAi.isVisible = false
-        webRTCClient.stop(streamId)
+        binding.inferenceStream.isVisible = false
+        binding.inferenceStream.stopStreaming(streamId)
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
@@ -766,11 +715,14 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
     }
 
     private fun showPrimaryFpvFullScreen() {
+        fullViewType = ViewType.FPV
+
+        binding.inferenceStream.isClickable = true
         primaryFpvWidget.elevation = 0f
 
         binding.widgetFpvInteraction.isInteractionEnabled = true
 
-        binding.playerView.elevation = 50f
+        binding.inferenceStream.elevation = 50f
 
         animateView(mapWidget, mapWidget.width, widgetWidth, mapWidget.height, widgetHeight)
         animateView(
@@ -782,24 +734,33 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
         )
 
         animateView(
-            binding.playerView,
-            binding.playerView.width,
+            binding.inferenceStream,
+            binding.inferenceStream.width,
             widgetWidth,
-            binding.playerView.height,
+            binding.inferenceStream.height,
             widgetHeight
         )
 
-        binding.fbStartStop.show()
         binding.imgMapMinimize.show()
-        binding.imgShowMap.show()
         binding.imgMapFullscreen.show()
         if (isStreaming)
             binding.aiButton.show()
     }
 
-    private fun shoMapFullScreen() {
-        primaryFpvWidget.elevation = 50f
+    private fun showMapFullScreen() {
         binding.widgetFpvInteraction.isInteractionEnabled = false
+
+        if (fullViewType == ViewType.FPV) {
+            binding.inferenceStream.isClickable = false
+            primaryFpvWidget.elevation = 100f
+            binding.inferenceStream.elevation = 50f
+        } else {
+            binding.inferenceStream.isClickable = true
+            primaryFpvWidget.elevation = 50f
+            binding.inferenceStream.elevation = 100f
+        }
+
+        fullViewType = ViewType.MAP
 
         animateView(
             mapWidget,
@@ -816,18 +777,35 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
             widgetHeight
         )
 
+        animateView(
+            binding.inferenceStream,
+            binding.inferenceStream.width,
+            widgetWidth,
+            binding.inferenceStream.height,
+            widgetHeight
+        )
+
         binding.imgMapMinimize.hide()
-        binding.imgShowMap.hide()
         binding.imgMapFullscreen.hide()
     }
 
     private fun showAiFullScreen() {
+        fullViewType = ViewType.AI
+        binding.inferenceStream.isClickable = false
         primaryFpvWidget.elevation = 50f
         binding.widgetFpvInteraction.isInteractionEnabled = false
 
-        binding.playerView.elevation = 0f
+        binding.inferenceStream.elevation = 0f
 
         animateView(mapWidget, mapWidget.width, widgetWidth, mapWidget.height, widgetHeight)
+
+        animateView(
+            binding.inferenceStream,
+            binding.inferenceStream.width,
+            binding.fpvHolder.width,
+            binding.inferenceStream.height,
+            binding.fpvHolder.height
+        )
 
         animateView(
             primaryFpvWidget,
@@ -837,17 +815,7 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
             widgetHeight
         )
 
-        animateView(
-            binding.playerView,
-            binding.playerView.width,
-            binding.fpvHolder.width,
-            binding.playerView.height,
-            binding.fpvHolder.height
-        )
-
-        binding.fbStartStop.show()
         binding.imgMapMinimize.show()
-        binding.imgShowMap.show()
         binding.imgMapFullscreen.show()
     }
 

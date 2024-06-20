@@ -14,15 +14,15 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import dji.sampleV5.aircraft.comom.SHARED_PREFS
+import dji.sampleV5.aircraft.data.MSDKInfo
 import dji.sampleV5.aircraft.databinding.ActivityMainDefaultBinding
 import dji.sampleV5.aircraft.models.MSDKInfoVm
 import dji.sampleV5.aircraft.models.MSDKManagerVM
 import dji.sampleV5.aircraft.models.globalViewModels
 import dji.sampleV5.aircraft.util.ToastUtils
-import dji.sampleV5.aircraft.views.login.LoginPasswordFragment
+import dji.sdk.keyvalue.value.product.ProductType
 import dji.v5.common.utils.GeoidManager
 import dji.v5.utils.common.LogUtils
 import dji.v5.utils.common.PermissionUtil
@@ -30,8 +30,6 @@ import dji.v5.utils.common.StringUtils
 import dji.v5.ux.core.communication.DefaultGlobalPreferences
 import dji.v5.ux.core.communication.GlobalPreferencesManager
 import dji.v5.ux.core.util.UxSharedPreferencesUtil
-import dji.v5.ux.sample.showcase.defaultlayout.DefaultLayoutActivity
-import dji.v5.ux.sample.showcase.widgetlist.WidgetsActivity
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -71,13 +69,12 @@ class MainActivity : AppCompatActivity() {
     private val msdkManagerVM: MSDKManagerVM by globalViewModels()
     private val handler: Handler = Handler(Looper.getMainLooper())
     private val disposable = CompositeDisposable()
+    private var productType = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainDefaultBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        binding.contentMain.isVisible = false
 
         val videoPath = "android.resource://" + packageName + "/" + R.raw.intro_video
         val uri = Uri.parse(videoPath)
@@ -85,23 +82,24 @@ class MainActivity : AppCompatActivity() {
         binding.videoView.setVideoURI(uri)
         binding.videoView.start()
 
+        binding.txtVersion.text = getString(R.string.version, BuildConfig.VERSION_NAME)
         binding.videoView.setOnCompletionListener {
-            startActivity(Intent(this@MainActivity, LoginActivity::class.java))
-            finish()
-            /*lifecycleScope.launch {
+            lifecycleScope.launch {
                 var count = 0
-                while (count < 10) {
+                while (count < 30) {
                     count++
-                    if (msdkInfoVm.msdkInfo.value?.productType?.name != "UNKNOWN") {
+                    if (productType != ProductType.UNKNOWN.name &&
+                        productType != ProductType.UNRECOGNIZED.name
+                    ) {
                         savePrefs(msdkInfoVm.msdkInfo.value?.productType?.name ?: "")
                         startActivity(Intent(this@MainActivity, LoginActivity::class.java))
                         finish()
                     } else {
-                        showToast(getString(R.string.not_connected_yet))
+                        binding.txtInfo.text = getString(R.string.not_connected_yet)
                     }
                     delay(2000)
                 }
-            }*/
+            }
         }
 
         if (!isTaskRoot && intent.hasCategory(Intent.CATEGORY_LAUNCHER) && Intent.ACTION_MAIN == intent.action) {
@@ -126,14 +124,14 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (checkPermission()) {
-            handleAfterPermissionPermitted()
+            //handleAfterPermissionPermitted()
         }
     }
 
     override fun onResume() {
         super.onResume()
         if (checkPermission()) {
-            handleAfterPermissionPermitted()
+            //handleAfterPermissionPermitted()
         }
     }
 
@@ -152,52 +150,6 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
     }
 
-    private fun handleAfterPermissionPermitted() {
-        binding.btnTestingTools.isEnabled = true
-    }
-
-    @SuppressLint("SetTextI18n")
-    private fun initMSDKInfoView() {
-        msdkInfoVm.msdkInfo.observe(this) { msdkInfo ->
-            /*if (msdkInfo.productType.name != "UNKNOWN") {
-                savePrefs(msdkInfo.productType.name)
-                startActivity(Intent(this, LoginActivity::class.java))
-            } else {
-                showToast(getString(R.string.not_connected_yet))
-            }*/
-            /*binding.imgDevice.setImageResource(setImageDevice(it.productType.name))
-            binding.txtInfo.text =
-                        "${StringUtils.getResStr(R.string.model, it.productType.name)}\n" +
-                        "${StringUtils.getResStr(R.string.package_product_category, it.packageProductCategory)}\n" +
-                        it.coreInfo.toString()*/
-        }
-
-        binding.btnWidgetList.isEnabled = false
-        binding.btnTestingTools.isEnabled = false
-        binding.btnLiveStream.isEnabled = false
-
-        binding.btnWidgetList.setOnClickListener {
-            Intent(this, WidgetsActivity::class.java).also {
-                startActivity(it)
-            }
-        }
-        binding.btnTestingTools.setOnClickListener {
-            Intent(this, AircraftTestingToolsActivity::class.java).also {
-                startActivity(it)
-            }
-        }
-        binding.btnDefaultLayout.setOnClickListener {
-            Intent(this, DefaultLayoutActivity::class.java).also {
-                startActivity(it)
-            }
-        }
-        binding.btnLiveStream.setOnClickListener {
-            Intent(this, LiveStreamingActivity::class.java).also {
-                startActivity(it)
-            }
-        }
-    }
-
     private fun savePrefs(deviceName: String) {
         val sharedPreferences = getSharedPreferences(SHARED_PREFS, Context.MODE_PRIVATE)
         val prefEdit = sharedPreferences?.edit()
@@ -205,16 +157,20 @@ class MainActivity : AppCompatActivity() {
         prefEdit?.apply()
     }
 
+    private fun initMSDKInfoView() {
+        msdkInfoVm.msdkInfo.observe(this) { msdkInfo ->
+            productType = msdkInfo.productType.name
+        }
+    }
+
     private fun observeSDKManager() {
         msdkManagerVM.lvRegisterState.observe(this) { resultPair ->
             val statusText: String?
             if (resultPair.first) {
-                Log.i(TAG,"Register Success")
-                statusText = StringUtils.getResStr(this, R.string.registered)
+                Log.i(TAG, "Register Success")
+
                 msdkInfoVm.initListener()
                 handler.postDelayed({
-                    binding.btnWidgetList.isEnabled = true
-                    binding.btnLiveStream.isEnabled = true
                     UxSharedPreferencesUtil.initialize(this)
                     GlobalPreferencesManager.initialize(DefaultGlobalPreferences(this))
                     GeoidManager.getInstance().init(this)
@@ -222,9 +178,9 @@ class MainActivity : AppCompatActivity() {
             } else {
                 showToast("Register Failure: ${resultPair.second}")
                 statusText = StringUtils.getResStr(this, R.string.unregistered)
+                binding.txtInfo.text = statusText
             }
-            binding.txtRegistrationStatus.text =
-                StringUtils.getResStr(R.string.registration_status, statusText)
+
         }
 
         msdkManagerVM.lvProductConnectionState.observe(this) { resultPair ->
@@ -240,17 +196,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         msdkManagerVM.lvDBDownloadProgress.observe(this) { resultPair ->
-            Log.i(TAG, "Database Download Progress current: ${resultPair.first}, total: ${resultPair.second}")
+            Log.i(
+                TAG,
+                "Database Download Progress current: ${resultPair.first}, total: ${resultPair.second}"
+            )
         }
     }
-
-    private fun setImageDevice(deviceName: String): Int =
-        when(deviceName) {
-            "M30_SERIES" -> R.drawable.drone_matrice_30_series
-            "DJI_MAVIC_3_ENTERPRISE_SERIES" -> R.drawable.drone_mavic_3_enterprise
-            else -> R.drawable.ic_question
-        }
-
 
     private fun showToast(content: String) {
         ToastUtils.showToast(content)

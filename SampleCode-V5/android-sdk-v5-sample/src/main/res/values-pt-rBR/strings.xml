@@ -478,7 +478,8 @@ Mais informações consulte as notas de lançamento."</string>
     <string name="drone">Drone</string>
     <string name="disconnected">Desconectado</string>
     <string name="no_stream_to_play">Sem streaming para visualizar</string>
-    <string name="not_connected_yet">Não conectado com o drone ainda</string>
+    <string name="not_connected_yet">Sem conexão com o drone.</string>
     <string name="ai">IA</string>
     <string name="remember_me">Lembrar e-mail</string>
+    <string name="version">versão: %s</string>
 </resources>

@@ -37,36 +37,14 @@
                     tools:layout_editor_absoluteY="0dp" />
             </dji.v5.ux.core.widget.fpv.FPVWidget>
 
-            <org.webrtc.SurfaceViewRenderer
-                android:id="@+id/playerView"
+            <dji.sampleV5.aircraft.comom.components.InferenceStreamView
+                android:id="@+id/inferenceStream"
                 android:layout_width="200dp"
                 android:layout_height="100dp"
                 android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintDimensionRatio="16:9"
-                app:layout_constraintEnd_toEndOf="parent" />
-
-            <com.google.android.material.progressindicator.CircularProgressIndicator
-                android:id="@+id/loadingAi"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:indeterminate="true"
-                android:visibility="gone"
-                app:layout_constraintBottom_toBottomOf="@+id/playerView"
-                app:layout_constraintEnd_toEndOf="@+id/playerView"
-                app:layout_constraintStart_toStartOf="@+id/playerView"
-                app:layout_constraintTop_toTopOf="@+id/playerView" />
-
-            <TextView
-                android:id="@+id/txtMessage"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:textAlignment="center"
-                android:textColor="@color/white"
-                app:layout_constraintBottom_toBottomOf="@id/playerView"
-                app:layout_constraintEnd_toEndOf="@id/playerView"
-                app:layout_constraintStart_toStartOf="@id/playerView"
-                app:layout_constraintTop_toTopOf="@id/playerView" />
+                app:layout_constraintEnd_toEndOf="parent"/>
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/contentMap"
@@ -259,7 +237,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintDimensionRatio="@string/uxsdk_widget_camera_controls_ratio"
             app:layout_constraintEnd_toStartOf="@id/widget_camera_controls"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toBottomOf="@+id/widget_remaining_flight_time" />
 
         <dji.v5.ux.flight.takeoff.TakeOffWidget
             android:id="@+id/widget_take_off"
@@ -404,7 +382,6 @@
             android:padding="8dp"
             android:src="@drawable/ic_play"
             app:backgroundTint="@color/main_blue"
-            app:layout_constraintBottom_toTopOf="@id/widget_map"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/widget_return_to_home" />
 
