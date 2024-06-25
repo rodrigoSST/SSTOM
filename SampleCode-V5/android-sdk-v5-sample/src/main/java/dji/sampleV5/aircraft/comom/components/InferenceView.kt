@@ -12,7 +12,6 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.lifecycleScope
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.ViewInferenceStreamBinding
-import dji.sampleV5.aircraft.views.LiveStreamingFragment
 import io.antmedia.webrtcandroidframework.api.DefaultWebRTCListener
 import io.antmedia.webrtcandroidframework.api.IWebRTCClient
 import io.antmedia.webrtcandroidframework.api.IWebRTCListener
@@ -73,7 +72,7 @@ class InferenceStreamView @JvmOverloads constructor(
             .setVideoCallEnabled(false)
             .addRemoteVideoRenderer(binding.playerView)
             .setWebRTCListener(createWebRTCListener())
-            .setServerUrl(LiveStreamingFragment.WEBRTC_HOST)
+            .setServerUrl(WEBRTC_HOST)
             .setReconnectionEnabled(true)
             .build()
     }
@@ -125,5 +124,10 @@ class InferenceStreamView @JvmOverloads constructor(
         lifecycleScope.launch {
             webRTCClient.stop(streamId)
         }
+    }
+
+    companion object {
+        const val WEBRTC_HOST =
+            "wss://ec2-3-88-125-209.compute-1.amazonaws.com:5443/WebRTCAppEE/websocket"
     }
 }
