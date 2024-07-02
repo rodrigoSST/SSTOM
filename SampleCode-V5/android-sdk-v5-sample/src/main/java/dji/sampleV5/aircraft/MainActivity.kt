@@ -84,7 +84,12 @@ class MainActivity : AppCompatActivity() {
 
         binding.txtVersion.text = getString(R.string.version, BuildConfig.VERSION_NAME)
         binding.videoView.setOnCompletionListener {
-            lifecycleScope.launch {
+            //TODO pensar em algo para quando o drone não estiver conectado ao controle
+            savePrefs(msdkInfoVm.msdkInfo.value?.productType?.name ?: "")
+            startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+            finish()
+
+            /*lifecycleScope.launch {
                 var count = 0
                 while (count < 30) {
                     count++
@@ -99,7 +104,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     delay(2000)
                 }
-            }
+            }*/
         }
 
         if (!isTaskRoot && intent.hasCategory(Intent.CATEGORY_LAUNCHER) && Intent.ACTION_MAIN == intent.action) {

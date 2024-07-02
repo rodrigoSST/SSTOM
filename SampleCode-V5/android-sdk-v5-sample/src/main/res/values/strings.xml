@@ -484,7 +484,7 @@ More refer to the release notes." </string>
     <string name="drone">Drone</string>
     <string name="disconnected">Disconnected</string>
     <string name="no_stream_to_play">No stream to play</string>
-    <string name="not_connected_yet">Aircraft yet</string>
+    <string name="not_connected_yet">No link to aircraft</string>
     <string name="ai">AI</string>
     <string name="remember_me">Remeber me</string>
     <string name="version">version: %s</string>

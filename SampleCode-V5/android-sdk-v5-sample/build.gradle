@@ -12,7 +12,7 @@ android {
         applicationId "com.sst.sstplay.smdev5"
         minSdkVersion Integer.parseInt(project.ANDROID_MIN_SDK_VERSION)
         targetSdkVersion Integer.parseInt(project.ANDROID_TARGET_SDK_VERSION)
-        versionCode 13
+        versionCode 14
         versionName "1.0.0"
         manifestPlaceholders["API_KEY"] = project.AIRCRAFT_API_KEY
         manifestPlaceholders["AMAP_API_KEY"] = project.AMAP_API_KEY

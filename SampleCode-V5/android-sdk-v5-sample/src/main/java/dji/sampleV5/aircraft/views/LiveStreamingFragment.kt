@@ -63,6 +63,7 @@ import dji.v5.ux.core.widget.fpv.FPVStreamSourceListener
 import dji.v5.ux.core.widget.fpv.FPVWidget
 import dji.v5.ux.core.widget.hsi.HorizontalSituationIndicatorWidget
 import dji.v5.ux.core.widget.hsi.PrimaryFlightDisplayWidget
+import dji.v5.ux.core.widget.setting.SettingWidget
 import dji.v5.ux.map.MapWidget
 import dji.v5.ux.mapkit.core.maps.DJIMap
 import dji.v5.ux.training.simulatorcontrol.SimulatorControlWidget
@@ -429,6 +430,14 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
 
         binding.inferenceStream.setOnClickListener {
             showAiFullScreen()
+        }
+
+        binding.panelTopBar.settingWidget?.setOnClickListener {
+            if (mDrawerLayout.isDrawerOpen(GravityCompat.END)) {
+                mDrawerLayout.closeDrawers()
+            } else {
+                mDrawerLayout.openDrawer(GravityCompat.END)
+            }
         }
     }
 

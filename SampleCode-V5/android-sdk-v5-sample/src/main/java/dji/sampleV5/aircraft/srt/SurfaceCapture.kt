@@ -3,7 +3,6 @@ package dji.sampleV5.aircraft.srt
 import android.media.MediaFormat
 import android.os.SystemClock
 import android.view.Surface
-import com.google.android.material.color.utilities.MaterialDynamicColors.surface
 import dji.sdk.keyvalue.value.common.ComponentIndexType
 import dji.v5.manager.interfaces.ICameraStreamManager
 import io.github.thibaultbee.streampack.data.VideoConfig
@@ -93,25 +92,5 @@ class SurfaceCapture(
 
     override fun release() {
         //cameraController.release()
-    }
-
-    private fun getOffsetFromRealtimeTimestampSource(): Long {
-        // Measure the offset of the REALTIME clock w.r.t. the MONOTONIC clock. Do
-        // CLOCK_OFFSET_CALIBRATION_ATTEMPTS measurements and choose the offset computed with the
-        // smallest delay between measurements. When the camera returns a timestamp ts, the
-        // timestamp in MONOTONIC timebase will now be (ts + cameraTimeOffsetToMonoClock).
-        var offset = Long.MAX_VALUE
-        var lowestGap = Long.MAX_VALUE
-        for (i in 0 until 3) {
-            val startMonoTs = System.nanoTime()
-            val realTs = SystemClock.elapsedRealtimeNanos()
-            val endMonoTs = System.nanoTime()
-            val gapMonoTs = endMonoTs - startMonoTs
-            if (gapMonoTs < lowestGap) {
-                lowestGap = gapMonoTs
-                offset = (startMonoTs + endMonoTs) / 2 - realTs
-            }
-        }
-        return offset / 1000
     }
 }
