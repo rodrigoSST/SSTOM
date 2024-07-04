@@ -84,13 +84,6 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
-/**
- * ClassName : LiveStreamFragment
- * Description : 直播功能
- * Author : daniel.chen
- * CreateDate : 2022/3/23 10:58 上午
- * Copyright : ©2022 DJI All Rights Reserved.
- */
 class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
 
     private var _binding: FragmentLiveStreamingBinding? = null
