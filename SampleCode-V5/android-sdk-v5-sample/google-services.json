@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:610993558848:android:bd5030002717e5273596a5",
+        "mobilesdk_app_id": "1:610993558848:android:ced4bdfb2c656b153596a5",
         "android_client_info": {
-          "package_name": "com.sst.sstplay.smdev5"
+          "package_name": "com.sst.sstplaysmdev5"
         }
       },
       "oauth_client": [],
