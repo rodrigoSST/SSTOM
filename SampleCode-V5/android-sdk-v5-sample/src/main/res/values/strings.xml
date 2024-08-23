@@ -488,4 +488,8 @@ More refer to the release notes." </string>
     <string name="ai">AI</string>
     <string name="remember_me">Remeber me</string>
     <string name="version">version: %s</string>
+    <string name="velocity">Velocidade</string>
+    <string name="action">Action</string>
+    <string name="add_waypoint">Add Waypoint</string>
+    <string name="waipoint">Waipoint</string>
 </resources>

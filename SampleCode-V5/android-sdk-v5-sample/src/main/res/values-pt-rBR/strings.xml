@@ -482,4 +482,8 @@ Mais informações consulte as notas de lançamento."</string>
     <string name="ai">IA</string>
     <string name="remember_me">Lembrar e-mail</string>
     <string name="version">versão: %s</string>
+    <string name="velocity">Velocidade</string>
+    <string name="action">Action</string>
+    <string name="add_waypoint">Add Waypoint</string>
+    <string name="waipoint">Waipoint</string>
 </resources>

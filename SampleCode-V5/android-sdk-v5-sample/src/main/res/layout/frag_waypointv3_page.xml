@@ -12,7 +12,10 @@
         android:layout_height="match_parent"
         app:layout_constraintStart_toEndOf="@+id/waypoint_button_list"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.85">
+        app:layout_constraintWidth_percent="0.85"
+        app:uxsdk_djiMap_mapType="normal"
+        app:uxsdk_mapBoxToken="pk.eyJ1Ijoicm9kcmlnb3NzdCIsImEiOiJjbHd6Y2k3eDkwNjQ4MmpxM3M5b2d5cWR0In0.JyvL06SxK6PEphFMh6g5zw"
+        app:uxsdk_mapProvider="MapBox">
     </dji.v5.ux.map.MapWidget>
 
     <androidx.core.widget.NestedScrollView

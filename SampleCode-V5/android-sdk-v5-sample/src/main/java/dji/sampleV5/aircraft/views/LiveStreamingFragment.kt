@@ -18,6 +18,7 @@ import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.sst.data.model.request.StartStream
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
@@ -379,6 +380,12 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
             } else {
                 stopSrtStreaming()
             }
+        }
+
+        binding.fbStartWaypoint.setOnClickListener {
+            findNavController().navigate(
+                R.id.action_navigation_livestreaming_to_navigation_waypoint
+            )
         }
 
         binding.aiButton.setOnCheckedChangeListener { _, isChecked ->

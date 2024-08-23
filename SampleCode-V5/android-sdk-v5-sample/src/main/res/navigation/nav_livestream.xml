@@ -39,6 +39,20 @@
         android:id="@+id/navigation_livestreaming"
         android:name="dji.sampleV5.aircraft.views.LiveStreamingFragment"
         android:label="main_page"
-        tools:layout="@layout/fragment_live_streaming"/>
+        tools:layout="@layout/fragment_live_streaming">
+        <action
+            android:id="@+id/action_navigation_livestreaming_to_navigation_waypoint"
+            app:destination="@id/navigation_waypoint"
+            app:enterAnim="@anim/slide_in"
+            app:exitAnim="@anim/slide_out"
+            app:popEnterAnim="@anim/slide_in_pop"
+            app:popExitAnim="@anim/slide_out_pop"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_waypoint"
+        android:name="dji.sampleV5.aircraft.views.missions.WayPointFragment"
+        android:label="main_page"
+        tools:layout="@layout/frag_waypointv3_page"/>
 
 </navigation>
