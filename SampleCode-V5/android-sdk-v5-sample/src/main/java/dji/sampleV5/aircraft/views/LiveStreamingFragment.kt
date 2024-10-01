@@ -382,11 +382,11 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
             }
         }
 
-        binding.fbStartWaypoint.setOnClickListener {
+        /*binding.fbStartWaypoint.setOnClickListener {
             findNavController().navigate(
                 R.id.action_navigation_livestreaming_to_navigation_waypoint
             )
-        }
+        }*/
 
         binding.aiButton.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked)
