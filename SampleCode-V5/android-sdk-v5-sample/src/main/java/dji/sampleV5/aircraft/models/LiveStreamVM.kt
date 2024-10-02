@@ -66,6 +66,9 @@ class LiveStreamVM(
 
     private var repeatJob: Job? = null
 
+    private val _inferenceModels = MutableLiveData<List<String>>()
+    val inferenceModels: LiveData<List<String>> = _inferenceModels
+
     private val _device = MutableLiveData<DeviceUiModel>()
     val device: LiveData<DeviceUiModel> = _device
 
@@ -97,6 +100,15 @@ class LiveStreamVM(
         addListener()
     }
 
+    fun getInferenceModels() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                _inferenceModels.postValue(streamRepository.getInferenceModels())
+            } catch (e: Exception) {
+                _inferenceModels.postValue(listOf())
+            }
+        }
+    }
 
     fun startStream(startStream: StartStream) {
         viewModelScope.launch(Dispatchers.IO) {

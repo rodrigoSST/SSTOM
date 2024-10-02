@@ -492,4 +492,5 @@ More refer to the release notes." </string>
     <string name="action">Action</string>
     <string name="add_waypoint">Add Waypoint</string>
     <string name="waipoint">Waipoint</string>
+    <string name="select_inference_model">Select the AI inference model</string>
 </resources>

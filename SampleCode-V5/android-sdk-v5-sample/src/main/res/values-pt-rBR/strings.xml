@@ -486,4 +486,5 @@ Mais informações consulte as notas de lançamento."</string>
     <string name="action">Action</string>
     <string name="add_waypoint">Add Waypoint</string>
     <string name="waipoint">Waipoint</string>
+    <string name="select_inference_model">Selecione o modelo de inferência de IA</string>
 </resources>

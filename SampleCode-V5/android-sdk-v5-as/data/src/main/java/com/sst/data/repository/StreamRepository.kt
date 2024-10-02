@@ -9,6 +9,7 @@ import com.sst.data.model.response.StartStreamResponse
 interface StreamRepository {
     suspend fun startStream(startStream: StartStream): StartStreamResponse
     suspend fun disconnectDevice(deviceId: String): Response
+    suspend fun getInferenceModels(): List<String>
 }
 
 class StreamRepositoryImpl(
@@ -21,4 +22,6 @@ class StreamRepositoryImpl(
     override suspend fun disconnectDevice(deviceId: String) =
         sstPlayApi.disconnectDevice(deviceId)
 
+    override suspend fun getInferenceModels(): List<String> =
+        sstPlayApi.getInferenceModels()
 }

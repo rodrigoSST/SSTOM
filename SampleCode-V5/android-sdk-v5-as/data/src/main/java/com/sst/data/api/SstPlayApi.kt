@@ -31,4 +31,7 @@ interface SstPlayApi {
     suspend fun getDevices(
         @Path("userId") userId: String
     ): List<DeviceDataResponse>
+
+    @GET("/api/models")
+    suspend fun getInferenceModels(): List<String>
 }

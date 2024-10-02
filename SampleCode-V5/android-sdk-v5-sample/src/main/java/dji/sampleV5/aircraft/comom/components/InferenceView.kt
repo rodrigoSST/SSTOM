@@ -77,6 +77,10 @@ class InferenceStreamView @JvmOverloads constructor(
             .build()
     }
 
+    fun setInferenceModelText(model: String) {
+        binding.txtModel.text = model
+    }
+
     private fun createWebRTCListener(): IWebRTCListener {
         return object : DefaultWebRTCListener() {
             override fun onPlayStarted(streamId: String) {

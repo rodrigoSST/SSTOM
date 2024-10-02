@@ -19,6 +19,7 @@ import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sst.data.model.request.StartStream
 import dji.sampleV5.aircraft.R
 import dji.sampleV5.aircraft.databinding.FragmentLiveStreamingBinding
@@ -136,9 +137,7 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
         arguments?.getString(EXTRA_ID_DEVICE)
     }
 
-    private val inferenceModel by lazy {
-        arguments?.getString(EXTRA_INFERENCE_MODEL) ?: "eco"
-    }
+    private lateinit var inferenceModel: String
 
     private val analyticsConfig by lazy {
         arguments?.getString(EXTRA_ANALYTICS_CONFIG) ?: "config_none"
@@ -285,6 +284,9 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
         initListener()
         setupObservers()
         activity?.let { binding.inferenceStream.setActivity(it) }
+
+        liveStreamVM.getInferenceModels()
+        inferenceModel = arguments?.getString(EXTRA_INFERENCE_MODEL) ?: "eco"
     }
 
     private fun toast(message: String) {
@@ -376,7 +378,7 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
     private fun initListener() {
         binding.fbStartStop.setOnClickListener {
             if (!isStreaming) {
-                startSrtStream()
+                selectInferenceModelDialog()
             } else {
                 stopSrtStreaming()
             }
@@ -668,6 +670,29 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
         }
     }
 
+    private fun selectInferenceModelDialog() {
+        val selectedModel = liveStreamVM.inferenceModels.value?.toTypedArray()?.indexOfLast {
+            it == inferenceModel
+        }
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.select_inference_model))
+            .setSingleChoiceItems(
+                liveStreamVM.inferenceModels.value?.toTypedArray(),
+                selectedModel ?: -1
+            ) { dialog, which ->
+                inferenceModel =
+                    liveStreamVM.inferenceModels.value?.toTypedArray()?.get(which) ?: inferenceModel
+                startSrtStream()
+                dialog.dismiss()
+            }
+            .setNegativeButton(getString(android.R.string.cancel)) { dialog, _ ->
+                startSrtStream()
+                dialog.dismiss()
+            }
+            .show()
+    }
+
     private fun startSrtStream() {
         binding.contentLoading.isVisible = true
 
@@ -700,6 +725,7 @@ class LiveStreamingFragment : DJIFragment(), SurfaceHolder.Callback {
     private fun playerStream() {
         binding.inferenceStream.isVisible = true
         binding.inferenceStream.startStreaming(streamId)
+        binding.inferenceStream.setInferenceModelText(inferenceModel)
     }
 
     private fun stopPlayer() {
